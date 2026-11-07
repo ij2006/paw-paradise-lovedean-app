@@ -1,0 +1,20 @@
+# Cloudflare Pages headers for the app.
+# The service worker and manifest must never be cached, so updates reach phones.
+/sw.js
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# Keep the test address (*.pages.dev) out of Google.
+https://:project.pages.dev/*
+  X-Robots-Tag: noindex

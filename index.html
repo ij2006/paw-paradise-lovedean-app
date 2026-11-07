@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Paw Paradise Lovedean</title>
+  <meta name="description" content="The Paw Paradise Lovedean app: book a secure, private dog field session in Lovedean, Hampshire." />
+  <meta name="robots" content="noindex" />
+  <meta name="theme-color" content="#1C3D28" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Paw Paradise" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="32x32" href="images/icons/icon-32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="images/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="images/icons/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600;1,700&family=Jost:wght@300;400;500;600&display=swap" />
+  <link rel="stylesheet" href="css/app.css" />
+  <script>
+    // Apply saved appearance settings before anything draws, so there's no flash
+    (function () {
+      var h = document.documentElement, g = function (k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };
+      var t = g('pp-theme', 'light');
+      if (t === 'auto') t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+      h.setAttribute('data-theme', t);
+      h.setAttribute('data-fontsize', g('pp-fontsize', 'md'));
+      h.setAttribute('data-contrast', g('pp-contrast', 'off'));
+      h.setAttribute('data-dyslexia', g('pp-dyslexia', 'off'));
+      h.setAttribute('data-motion', g('pp-motion', (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) ? 'reduced' : 'on'));
+      if (window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)) h.classList.add('is-installed');
+    })();
+  </script>
+</head>
+<body>
+  <!-- Splash: shows for a moment while the app starts -->
+  <div class="splash" id="splash" aria-hidden="true">
+    <img src="images/logo.png" alt="" width="160" height="160" />
+  </div>
+
+  <div class="app" id="app">
+    <!-- Top bar -->
+    <header class="topbar" id="topbar">
+      <div class="topbar-side topbar-left">
+        <button type="button" class="icon-btn back-btn" id="back-btn" aria-label="Back" hidden>
+          <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="back-label" id="back-label">Back</span>
+        </button>
+      </div>
+      <div class="topbar-title" id="topbar-title"></div>
+      <div class="topbar-side topbar-right">
+        <a href="#/staff" class="staff-pill" id="staff-pill" hidden>Staff</a>
+      </div>
+    </header>
+
+    <!-- Screens are added here -->
+    <main class="screens" id="screens" aria-live="off"></main>
+
+    <!-- Bottom tab bar -->
+    <nav class="tabbar" id="tabbar" aria-label="Main">
+      <a href="#/home" class="tab" data-tab="home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.5L12 3.5l8.5 7V20a1 1 0 0 1-1 1h-5v-6h-5v6h-5a1 1 0 0 1-1-1z"/></svg>
+        <span>Home</span>
+      </a>
+      <a href="#/book" class="tab" data-tab="book">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+        <span>Book</span>
+      </a>
+      <a href="#/gallery" class="tab" data-tab="gallery">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4.5 3.5 3 3-2.5L20 17"/></svg>
+        <span>Gallery</span>
+      </a>
+      <a href="#/reviews" class="tab" data-tab="reviews">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.8l2.5 5.1 5.6.8-4 3.9.9 5.6-5-2.6-5 2.6.9-5.6-4-3.9 5.6-.8z"/></svg>
+        <span>Reviews</span>
+      </a>
+      <a href="#/more" class="tab" data-tab="more">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16"/></svg>
+        <span>More</span>
+      </a>
+    </nav>
+  </div>
+
+  <!-- Bottom sheets (pop-ups), full-screen booking and photo viewer go here -->
+  <div id="layers"></div>
+
+  <!-- Screen-reader announcements and toasts -->
+  <div class="sr-only" id="announcer" aria-live="polite"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/legal.js"></script>
+  <script src="js/content.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/features.js"></script>
+  <script src="js/staff.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
