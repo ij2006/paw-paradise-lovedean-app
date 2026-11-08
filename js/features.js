@@ -48,32 +48,57 @@ var PPF = (function () {
   ].map(function (g) {
     var base = 'images/gallery/', thumbs = 'images/gallery/thumbs/';
     return g.video
-      ? { video: base + g.video + '.mp4', poster: base + g.video + '-poster.jpg', thumb: thumbs + g.video + '.jpg', alt: g.alt, caption: g.alt.replace(/^Video: /, ''), muted: g.muted, big: g.big }
-      : { src: base + g.src, thumb: thumbs + g.src, alt: g.alt, caption: g.alt, big: g.big };
+      ? { video: base + g.video + '.mp4', poster: base + g.video + '-poster.jpg', thumb: thumbs + g.video + '.jpg', alt: g.alt, muted: g.muted, big: g.big }
+      : { src: base + g.src, thumb: thumbs + g.src, alt: g.alt, big: g.big };
   });
 
-  function tile(it, i, group) {
-    return '<button type="button" class="tile' + (it.big ? ' tile--big' : '') + (it.video ? ' tile--video' : '') + '" data-view="' + group + '" data-index="' + i + '" aria-label="' + esc(it.alt) + (it.video ? ' (plays video)' : '') + '">' +
+  function tile(it, i, group, cls) {
+    return '<button type="button" class="tile' + (cls ? ' ' + cls : '') + (it.video ? ' tile--video' : '') + '" data-view="' + group + '" data-index="' + i + '" aria-label="' + esc(it.alt) + (it.video ? ' (plays video)' : '') + '">' +
       '<img src="' + esc(it.thumb) + '" alt="" loading="lazy" decoding="async" />' +
-      (it.video ? '<span class="play" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>' : '') +
+      (it.video ? '<span class="play" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>' : '') +
     '</button>';
   }
 
+  // Gallery: share card at the top, then Photos / Videos / Visitors to switch between
   var visitorItems = [];
+  var PHOTOS = [], VIDEOS = [];
+  GALLERY.forEach(function (it, i) { (it.video ? VIDEOS : PHOTOS).push(i); });
   function gallery(el) {
     el.innerHTML = PPC.galleryHead +
-      '<div class="tiles">' + GALLERY.map(function (it, i) { return tile(it, i, 'main'); }).join('') + '</div>' +
-      '<section id="visitor-section" hidden>' +
-        '<h2 class="group-title">From our visitors</h2>' +
-        '<div class="tiles" id="visitor-tiles"></div>' +
-      '</section>' +
-      '<div class="gallery-foot">' + PPC.galleryFoot() + '</div>';
+      PPC.galleryShare() +
+      '<div class="gallery-tabs segmented" role="tablist" aria-label="Show">' +
+        '<button type="button" role="tab" aria-selected="true" data-gtab="all">All</button>' +
+        '<button type="button" role="tab" aria-selected="false" data-gtab="photos">Photos</button>' +
+        '<button type="button" role="tab" aria-selected="false" data-gtab="videos">Videos</button>' +
+        '<button type="button" role="tab" aria-selected="false" data-gtab="visitors" id="gtab-visitors" hidden>Visitors</button>' +
+      '</div>' +
+      '<div class="mosaic" id="mosaic"></div>';
+    var mosaic = el.querySelector('#mosaic'), which = 'all';
+    function draw() {
+      var html;
+      if (which === 'visitors') {
+        html = visitorItems.map(function (it, i) { return tile(it, i, 'visitors'); }).join('');
+      } else {
+        var list = which === 'photos' ? PHOTOS : which === 'videos' ? VIDEOS : GALLERY.map(function (_, i) { return i; });
+        html = list.map(function (gi, n) { return tile(GALLERY[gi], gi, 'main', n % 7 === 0 ? 'tile--wide' : ''); }).join('');
+      }
+      mosaic.innerHTML = html || '<p class="empty">Nothing here yet.</p>';
+    }
+    draw();
+    el.querySelector('.gallery-tabs').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-gtab]');
+      if (!b) return;
+      which = b.getAttribute('data-gtab');
+      Array.prototype.forEach.call(el.querySelectorAll('[data-gtab]'), function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+      draw();
+    });
     el.addEventListener('click', function (e) {
       var t = e.target.closest('[data-view]');
       if (!t) return;
       var items = t.getAttribute('data-view') === 'main' ? GALLERY : visitorItems;
       PPUI.viewer(items, +t.getAttribute('data-index'));
     });
+    el._drawGallery = function () { if (which === 'visitors') draw(); };
     loadVisitorPhotos(el);
     PPUI.pullToRefresh(el, function () { return loadVisitorPhotos(el); });
   }
@@ -85,11 +110,11 @@ var PPF = (function () {
     visitorItems = res.data.map(function (p) {
       var url = db.storage.from('gallery-public').getPublicUrl(p.path).data.publicUrl;
       var who = [p.dog, p.name].filter(Boolean).join(' with ');
-      return { src: url, thumb: url, alt: who ? 'Visitor photo: ' + who : 'Visitor photo from the field', caption: who };
+      return { src: url, thumb: url, alt: who ? 'Visitor photo: ' + who : 'Visitor photo from the field' };
     });
-    var section = el.querySelector('#visitor-section');
-    el.querySelector('#visitor-tiles').innerHTML = visitorItems.map(function (it, i) { return tile(it, i, 'visitors'); }).join('');
-    section.hidden = !visitorItems.length;
+    var vt = el.querySelector('#gtab-visitors');
+    if (vt) vt.hidden = !visitorItems.length;
+    if (el._drawGallery) el._drawGallery();
   }
 
   // ── SHARE PHOTOS (same rules as the website) ──
@@ -305,7 +330,7 @@ var PPF = (function () {
       tall: true,
       html:
         '<form class="form" id="post-form" novalidate>' +
-          '<div class="field"><label for="post-author">Your name</label><input type="text" id="post-author" autocomplete="off" value="' + esc(admin.name) + '" /></div>' +
+          '<div class="field"><label for="post-author">Your name</label><input type="text" id="post-author" autocomplete="off" placeholder="Leave blank to post as Paw Paradise" /></div>' +
           '<div class="field"><label for="post-title">Title</label><input type="text" id="post-title" autocomplete="off" placeholder="Post title" /></div>' +
           '<div class="field"><label for="post-excerpt">Short teaser <span class="opt">(optional, shown on the news list)</span></label><textarea id="post-excerpt" rows="2" placeholder="A sentence or two to draw people in…"></textarea></div>' +
           '<div class="field"><label for="post-body">Post</label><textarea id="post-body" rows="9" placeholder="Write your post here. Leave a blank line between paragraphs."></textarea><span class="field-hint">Blank lines become paragraph breaks. No other formatting needed.</span></div>' +
@@ -433,7 +458,7 @@ var PPF = (function () {
   function renderInstall(body, opts) {
     opts = opts || {};
     var ios = isIOS(), android = /android/i.test(navigator.userAgent);
-    var hero = opts.hero === false ? '' : '<div class="install-hero"><img src="images/icons/apple-touch-icon.png" alt="" width="64" height="64" /><p><strong>Paw Paradise</strong><br>Opens full screen from your home screen, like any other app.</p></div>';
+    var hero = opts.hero === false ? '' : '<div class="install-hero"><img src="images/icons/pp-icon-180.png" alt="" width="64" height="64" /><p><strong>Paw Paradise</strong><br>Opens full screen from your home screen, like any other app.</p></div>';
     function show(html, focus) {
       body.innerHTML = hero + html;
       if (focus !== false) { var f = body.querySelector('button, a'); if (f) f.focus({ preventScroll: true }); }

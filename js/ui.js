@@ -178,7 +178,7 @@ var PPUI = (function () {
           var media = it.video
             ? '<video controls playsinline preload="none" poster="' + esc(it.poster) + '"' + (it.muted ? ' muted' : '') + '><source src="' + esc(it.video) + '" type="video/mp4" /></video>'
             : '<img src="' + esc(it.src) + '" alt="' + esc(it.alt) + '" ' + (Math.abs(i - start) > 1 ? 'loading="lazy"' : '') + ' />';
-          return '<figure class="viewer-slide">' + media + (it.caption ? '<figcaption>' + esc(it.caption) + '</figcaption>' : '') + '</figure>';
+          return '<figure class="viewer-slide">' + media + '</figure>';
         }).join('') +
       '</div>' +
       '<button type="button" class="viewer-nav viewer-prev" aria-label="Previous">‹</button>' +

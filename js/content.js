@@ -28,6 +28,7 @@
     rules: '<path d="M12 3.5l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9v-5z"/><path d="M9 12l2 2 4-4"/>',
     heart: '<path d="M12 19.5s-7-4.3-7-9.3A3.8 3.8 0 0 1 12 8a3.8 3.8 0 0 1 7 2.2c0 5-7 9.3-7 9.3z"/>',
     glass: '<rect x="4" y="4" width="16" height="16" rx="5"/><path d="M8 15.5l7.5-7.5M8 11l3-3" opacity=".9"/>',
+    map: '<path d="M9 4.5l-5 2v13l5-2 6 2 5-2v-13l-5 2z"/><path d="M9 4.5v13M15 6.5v13"/>',
     car: '<path d="M5 15.5V12l1.8-4.5h10.4L19 12v3.5M5 15.5h14M5 15.5V18M19 15.5V18"/><circle cx="8" cy="15.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="16" cy="15.5" r="1.3" fill="currentColor" stroke="none"/>'
   };
   function svg(name) {
@@ -76,6 +77,14 @@
   function w3wLink() { return 'https://what3words.com/' + C.what3words; }
   function w3wTitle() { return '<span class="w3w-slashes" aria-hidden="true">///</span>' + C.what3words + '<span class="sr-only"> on what3words</span>'; }
 
+  function findUs(tone) {
+    return group('Find us', [
+      cell({ href: C.googleMaps, external: true, icon: icon('map', 'green'), title: 'Google Maps', sub: 'Directions to the gate' }),
+      cell({ href: C.appleMaps, external: true, icon: icon('map', 'green'), title: 'Apple Maps', sub: 'Directions to the gate' }),
+      cell({ href: w3wLink(), external: true, icon: icon('pin', tone || 'green'), title: w3wTitle(), sub: 'Tagdell Lane, Lovedean' })
+    ]);
+  }
+
   var FAQ_ICONS = { planning: ['calendar', 'green'], arrival: ['car', 'blue'], rules: ['rules', 'amber'], health: ['heart', 'red'], bookings: ['pound', 'grey'] };
 
   window.PPC = {
@@ -84,12 +93,9 @@
     // ── HOME ─────────────────────────────────
     home: function () {
       return '' +
-      '<header class="home-head">' +
-        '<img src="images/logo.png" alt="" width="48" height="48" />' +
-        '<h1 class="large-title home-title">Paw Paradise</h1>' +
-      '</header>' +
+      '<h1 class="sr-only">Paw Paradise Lovedean</h1>' +
       '<figure class="hero">' +
-        '<img src="images/hero.jpg" alt="Aerial view of the Paw Paradise dog field surrounded by woodland" width="1200" height="640" />' +
+        '<img src="images/hero-dog.jpg" alt="Golden retriever standing on the grassy mound in the field" width="900" height="750" />' +
         '<figcaption><strong>Secure, private dog field</strong><span>Lovedean · South Downs National Park</span></figcaption>' +
       '</figure>' +
       '<div class="group home-status">' +
@@ -112,9 +118,7 @@
       '<div class="section-head"><h2 class="group-title">Take a look</h2><a class="see-all" href="#/gallery">See all</a></div>' +
       '<div class="photo-strip" id="home-strip"></div>' +
       '<div id="home-news"></div>' +
-      group('Find us', [
-        cell({ href: w3wLink(), external: true, icon: icon('pin', 'green'), title: w3wTitle(), sub: 'Tagdell Lane, Lovedean' })
-      ]) +
+      findUs() +
       group('', [
         cell({ href: '#/info', icon: icon('info', 'green'), title: 'Information &amp; FAQs' })
       ]);
@@ -142,15 +146,19 @@
     },
 
     // ── GALLERY ──────────────────────────────
-    galleryHead: '<h1 class="large-title">Gallery</h1>',
-    galleryFoot: function () {
-      return group('', [cell({ attrs: 'data-sheet="share-photos"', icon: icon('camera', 'green'), title: 'Send us your photos', sub: 'Up to 3 from your visit' })]);
+    galleryHead: '<h1 class="sr-only">Gallery</h1>',
+    galleryShare: function () {
+      return '<button type="button" class="share-card" data-sheet="share-photos">' +
+        '<span class="share-card-icon" aria-hidden="true">' + svg('camera').replace('width="18" height="18"', 'width="24" height="24"') + '</span>' +
+        '<span class="share-card-text"><strong>Share your photos</strong><span>Send us up to 3 from your visit and we\'ll add the best to the gallery</span></span>' +
+        '<span class="share-card-btn" aria-hidden="true">Add</span>' +
+      '</button>';
     },
 
     // ── MORE ─────────────────────────────────
     more: function () {
       return '' +
-      '<h1 class="large-title">More</h1>' +
+      '<h1 class="sr-only">More</h1>' +
       '<div class="group install-group" id="install-card">' +
         cell({ attrs: 'data-sheet="install"', icon: icon('addphone', 'amber'), title: 'Add app to your phone' }) +
       '</div>' +
@@ -237,7 +245,7 @@
         health: 'Vaccinations, breeds and unwell dogs',
         bookings: 'Cancellations, refunds, block bookings and gifts'
       };
-      return '<h1 class="large-title">FAQs</h1>' +
+      return '<h1 class="sr-only">FAQs</h1>' +
         '<div class="search"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' +
           '<input type="search" id="faq-search" placeholder="Search questions" aria-label="Search questions" autocomplete="off" enterkeyhint="search" /></div>' +
         '<div id="faq-results" hidden></div>' +
@@ -284,9 +292,7 @@
       group('Emergencies only', [
         cell({ href: C.phoneLink, icon: icon('call', 'red'), title: 'Call ' + C.phone, sub: 'Problem at the field during your session' })
       ]) +
-      group('Find us', [
-        cell({ href: w3wLink(), external: true, icon: icon('pin', 'red'), title: w3wTitle(), sub: 'Tagdell Lane, Lovedean' })
-      ]) +
+      findUs() +
       group('Follow us', [
         cell({ href: C.social.instagram, external: true, icon: brandIcon('instagram'), title: 'Instagram' }),
         cell({ href: C.social.facebook, external: true, icon: brandIcon('facebook'), title: 'Facebook' }),

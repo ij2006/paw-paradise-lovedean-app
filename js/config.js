@@ -20,6 +20,8 @@ var PP_CONFIG = {
   phone: '02394 222052',
   phoneLink: 'tel:+442394222052',
   what3words: 'display.sway.liberated',
+  googleMaps: 'https://maps.app.goo.gl/GwPX8b4bw3bJ3x6UA',
+  appleMaps: 'https://maps.apple/p/vT0BXsQ7kg.1cP',
   postcode: 'PO8 0QN',
   website: 'https://pawparadiselovedean.co.uk',
 
@@ -40,5 +42,5 @@ var PP_CONFIG = {
   openingDate: 'Monday 16 November 2026',
   openingDateShort: 'Monday 16 November',
   openingDay: '2026-11-16',
-  version: '1.1.0'
+  version: '1.2.0'
 };

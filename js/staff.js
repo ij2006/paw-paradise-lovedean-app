@@ -104,7 +104,7 @@ var PPStaff = (function () {
   function dashboard(admin) {
     var C = PPC;
     var v = view(
-      '<h1 class="large-title">Staff</h1>' +
+      '<h1 class="sr-only">Staff</h1>' +
       C.group('', [C.row('Signed in as ' + esc(admin.name), '', { icon: C.icon('key', 'green'), sub: esc(admin.email) })]) +
       C.group('Inbox', [
         C.cell({ href: '#/staff/suggestions', icon: C.icon('mail', 'green'), title: 'Suggestions', value: '<span id="cnt-sugg"></span>' }),

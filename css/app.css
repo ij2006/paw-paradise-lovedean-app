@@ -950,3 +950,79 @@ html[data-fontsize="xl"] .back-label { max-width: 70px; }
 .is-animating .group, .is-animating .hero, .is-animating .btn-primary, .is-animating .tabbar { box-shadow: none !important; }
 .screen > * { contain: layout paint; }
 .tab { touch-action: none; }
+
+/* ═══ v13 ═══════════════════════════════════════════════════════════
+   Screen edges: if iOS briefly reports no notch / home bar, fit.js
+   supplies the real size so nothing slides under the clock. */
+:root {
+  --safe-top: max(env(safe-area-inset-top, 0px), var(--safe-top-fb, 0px));
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-bottom-fb, 0px));
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --tab-gap: max(12px, calc(var(--safe-bottom) - 6px));   /* space under the floating tab bar */
+  --content-w: 680px;                                     /* widest a list gets (iPhone Duo, landscape) */
+}
+html, body { height: 100%; overscroll-behavior: none; }
+
+/* Use the whole screen on every phone, including unfolded and landscape */
+.app { max-width: none; box-shadow: none !important; padding-left: var(--safe-left); padding-right: var(--safe-right); }
+@media (min-width: 640px) { body { background: var(--bg); } }
+
+/* Lists stay a comfortable width on big screens */
+.screen { padding-left: max(0px, calc((100% - var(--content-w)) / 2)); padding-right: max(0px, calc((100% - var(--content-w)) / 2)); }
+
+/* Branded top bar on every page: logo + page title */
+.topbar, .topbar.is-scrolled, .topbar.is-fixed { background: var(--bar-solid); box-shadow: none; }
+.topbar.has-scrolled, .topbar.is-fixed { box-shadow: 0 1px 0 var(--hairline); }
+.topbar-title, .topbar.is-home .topbar-title {
+  opacity: 1; display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: min(64vw, 420px);
+  font-family: var(--font-heading); font-style: italic; font-weight: 600; font-size: 1.3rem; color: var(--forest);
+}
+.topbar-title::before, .topbar.is-home .topbar-title::before {
+  content: ''; width: 30px; height: 30px; border-radius: 50%; flex: none; box-shadow: none;
+  background: url(../images/logo.png) center / cover no-repeat;
+}
+.topbar-title { overflow: hidden; }
+.back-label:empty { display: none; }
+.back-btn { padding: 0 10px 0 6px; }
+html[data-fontsize="lg"] .topbar-title, html[data-fontsize="xl"] .topbar-title { font-size: 1.2rem; }
+
+/* Floating tab bar: sits just above the home bar on every phone */
+.tabbar {
+  left: max(14px, calc(var(--safe-left) + 14px)); right: max(14px, calc(var(--safe-right) + 14px));
+  bottom: var(--tab-gap); max-width: 440px; margin: 0 auto;
+}
+.screen { padding-bottom: calc(66px + var(--tab-gap) + 30px); }
+.screen--fixed { bottom: calc(66px + var(--tab-gap) + 8px); padding-bottom: 0; }
+.toast { bottom: calc(66px + var(--tab-gap) + 14px); }
+@media (max-height: 460px) { .tabbar { height: 56px; } .tab { min-height: 44px; } .screen--fixed { bottom: calc(56px + var(--tab-gap) + 8px); } }
+
+/* Home: the golden retriever photo */
+.hero { aspect-ratio: 6 / 5; margin-top: 8px; }
+.hero img { object-position: center 40%; }
+@media (min-width: 560px) { .hero { aspect-ratio: 16 / 10; } .hero img { object-position: center 35%; } }
+
+/* Gallery: share card at the top, filter, rounded mosaic */
+.share-card {
+  display: flex; align-items: center; gap: 14px; width: calc(100% - 32px); margin: 10px 16px 16px; padding: 16px;
+  border: 0; border-radius: 22px; text-align: left; cursor: pointer; font: inherit;
+  background: #24533A; color: #fff; box-shadow: 0 8px 22px rgba(36,83,58,.22);
+}
+.share-card:active { transform: scale(.985); }
+.share-card-icon { width: 46px; height: 46px; border-radius: 14px; flex: none; display: grid; place-items: center; background: rgba(255,255,255,.16); color: #fff; }
+.share-card-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.share-card-text strong { color: #fff; font-size: 1.05rem; font-weight: 700; }
+.share-card-text span { color: rgba(255,255,255,.88); font-size: .85rem; line-height: 1.35; }
+.share-card-btn { flex: none; padding: 8px 16px; border-radius: 100px; background: #fff; color: #24533A; font-weight: 700; font-size: .9rem; }
+[data-theme="dark"] .share-card { background: #1F3D2B; box-shadow: none; }
+[data-theme="dark"] .share-card-btn { background: #A9D5B6; color: #0F1813; }
+[data-contrast="on"] .share-card { background: #003D14; box-shadow: none; }
+.gallery-tabs { display: flex; margin: 0 16px 12px; }
+.gallery-tabs button { flex: 1; }
+.mosaic { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); grid-auto-flow: dense; gap: 6px; margin: 0 16px; }
+.mosaic .tile { aspect-ratio: 1; border-radius: 14px; overflow: hidden; }
+.mosaic .tile--wide { grid-column: span 2; grid-row: span 2; border-radius: 18px; }
+.mosaic .tile:active { transform: scale(.97); }
+.mosaic .play { width: 28px; height: 28px; top: auto; left: auto; right: 8px; bottom: 8px; transform: none; display: grid; place-items: center; border-radius: 50%; background: rgba(0,0,0,.5); color: #fff; }
+.mosaic .empty { grid-column: 1 / -1; }
+.hero { max-height: 52vh; }

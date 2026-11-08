@@ -124,10 +124,8 @@ var PPApp = (function () {
   function onScroll() {
     if (!current) return;
     var y = current.el.scrollTop;
-    topbar.classList.toggle('is-scrolled', y > 4);
-    var def = ROUTES[current.name];
-    var hasLarge = !!current.el.querySelector('.large-title');
-    topbar.classList.toggle('show-title', y > 44 || (def.depth > 0 && !hasLarge) || !!def.fixed);
+    topbar.classList.toggle('has-scrolled', y > 4);
+    topbar.classList.add('show-title', 'is-scrolled');
   }
 
   function titleOf(r, el) { return (el && el.dataset.title) || ROUTES[r.name].title; }
@@ -163,17 +161,16 @@ var PPApp = (function () {
     if (canBack) {
       var prevKey = stack[stack.length - 2];
       var prevR = prevKey ? parse('#/' + prevKey) : parse('#/' + (def.parent || def.tab));
-      var bl = shortTitle(titleOf(prevR, cache[prevR.key]));
+      var bl = titleOf(r, el).length > 12 ? '' : shortTitle(titleOf(prevR, cache[prevR.key]));
       backLabel.textContent = bl;
-      backBtn.setAttribute('aria-label', bl === 'Back' ? 'Back' : 'Back to ' + bl);
+      backBtn.setAttribute('aria-label', bl ? 'Back to ' + bl : 'Back');
     }
 
     // Swap screens with a transition.
     // Finish any slide still in progress first, so a quick second tap can never
     // leave the wrong screen showing.
     finishTransition();
-    var motion = !swipeDone && direction !== 'fade' && document.documentElement.getAttribute('data-motion') !== 'reduced' && !firstRender && prev && prev.el !== el;
-    swipeDone = false;
+    var motion = direction !== 'none' && direction !== 'fade' && document.documentElement.getAttribute('data-motion') !== 'reduced' && !firstRender && prev && prev.el !== el;
     el.hidden = false;
     Array.prototype.forEach.call(screensEl.children, function (s) {
       if (s !== el && (!motion || s !== (prev && prev.el))) s.hidden = true;
@@ -200,7 +197,7 @@ var PPApp = (function () {
     firstRender = false;
   }
 
-  function shortTitle(t) { return t.length > 14 ? 'Back' : t; }
+  function shortTitle(t) { return t.length > 9 ? '' : t; }
 
   function onHashChange() {
     var r = parse(location.hash);
@@ -214,12 +211,14 @@ var PPApp = (function () {
       if (!stack.length) stack = [def.parent || def.tab];
       stack.push(r.key);
     }
+    if (Date.now() - navIntent > 1200 && direction !== 'fade') direction = 'none';
     show(r, direction);
   }
 
-  function go(name) { location.hash = '#/' + name; }
+  function go(name) { navIntent = Date.now(); location.hash = '#/' + name; }
 
   function back() {
+    navIntent = Date.now();
     if (PPUI.hasLayer()) { PPUI.closeTop(); return; }
     if (stack.length > 1) { history.back(); return; }
     var def = ROUTES[current.name];
@@ -311,6 +310,22 @@ var PPApp = (function () {
   });
   backBtn.addEventListener('click', back);
 
+  // Tap the version number 5 times: shows how the app has measured the screen
+  // (handy for checking it fits a particular phone).
+  var footTaps = 0, footTimer;
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.app-foot') || e.target.closest('a')) return;
+    footTaps++; clearTimeout(footTimer); footTimer = setTimeout(function () { footTaps = 0; }, 1500);
+    if (footTaps < 5) return;
+    footTaps = 0;
+    var f = window.PPFit || {}, i = f.insets || {};
+    PPUI.sheet({ title: 'Screen check', html: '<div class="group">' +
+      PPC.row('Screen', f.screen || '?') + PPC.row('App area', f.viewport || '?') +
+      PPC.row('Notch (iOS)', (i.top || 0) + 'pt') + PPC.row('Home bar (iOS)', (i.bottom || 0) + 'pt') +
+      PPC.row('Notch used', getComputedStyle(document.documentElement).getPropertyValue('--safe-top-fb').trim() || '0px', { sub: 'Only if iOS reports none' }) +
+      PPC.row('Version', PP_CONFIG.version) + '</div>' });
+  });
+
   // ── Tab bar you can slide along ─────────────
   // Press and drag across the bar: a glass highlight follows your finger
   // and opens the tab you let go on (like the iPhone's own tab bars).
@@ -391,66 +406,15 @@ var PPApp = (function () {
     window.addEventListener('resize', function () { Array.prototype.forEach.call(tabs, function (t, k) { if (t.classList.contains('is-active')) placeLens(k); }); });
   })();
 
-  // Swipe from the left edge to go back (like iPhone apps): the previous screen
-  // shows underneath and follows your finger; a flick or a long-enough drag goes back.
-  var swipeDone = false;
-  (function () {
-    var sx = null, sy = 0, dx = 0, lastX = 0, lastT = 0, vel = 0, el = null, prevEl = null, decided = false, w = 0;
-    function prevScreen() {
-      var prevKey = stack[stack.length - 2];
-      var r = prevKey ? parse('#/' + prevKey) : parse('#/' + (ROUTES[current.name].parent || ROUTES[current.name].tab));
-      if (!cache[r.key] || ROUTES[r.name].nocache) { if (cache[r.key]) cache[r.key].remove(); cache[r.key] = makeScreen(r); }
-      return cache[r.key];
-    }
-    function setX(x) {
-      el.style.transform = 'translateX(' + x + 'px)';
-      if (prevEl) prevEl.style.transform = 'translateX(' + (-0.28 * w + 0.28 * x) + 'px)';
-    }
-    function cleanup() {
-      [el, prevEl].forEach(function (n) { if (n) { n.style.transition = ''; n.style.transform = ''; n.style.zIndex = ''; n.style.boxShadow = ''; } });
-    }
-    screensEl.addEventListener('touchstart', function (e) {
-      sx = null;
-      if (!document.documentElement.classList.contains('is-installed') || pending || !current || ROUTES[current.name].depth === 0 || e.touches[0].clientX > 28) return;
-      sx = lastX = e.touches[0].clientX; sy = e.touches[0].clientY; lastT = e.timeStamp; dx = 0; vel = 0; decided = false;
-      el = current.el; w = screensEl.clientWidth; prevEl = null;
-    }, { passive: true });
-    screensEl.addEventListener('touchmove', function (e) {
-      if (sx === null) return;
-      var x = e.touches[0].clientX, y = e.touches[0].clientY;
-      if (!decided) {
-        if (Math.abs(y - sy) > 12 && Math.abs(y - sy) > Math.abs(x - sx)) { sx = null; return; }   // vertical scroll: ignore
-        if (x - sx < 8) return;
-        decided = true;
-        prevEl = prevScreen();
-        prevEl.hidden = false; prevEl.style.zIndex = '1';
-        el.style.zIndex = '2'; el.style.boxShadow = '-8px 0 24px rgba(0,0,0,.12)';
-        el.style.transition = prevEl.style.transition = 'none';
-      }
-      dx = Math.max(0, x - sx);
-      var dt = Math.max(1, e.timeStamp - lastT); vel = (x - lastX) / dt; lastX = x; lastT = e.timeStamp;
-      setX(dx);
-    }, { passive: true });
-    screensEl.addEventListener('touchend', function () {
-      if (sx === null) return;
-      sx = null;
-      if (!decided) return;
-      var go = dx > w * 0.35 || vel > 0.45;
-      var ease = 'transform .22s cubic-bezier(.22,.61,.36,1)';
-      el.style.transition = prevEl.style.transition = ease;
-      if (go) {
-        setX(w);
-        setTimeout(function () {
-          cleanup();
-          swipeDone = true;      // the screen is already in place: no extra animation
-          back();
-        }, 230);
-      } else {
-        setX(0);
-        setTimeout(function () { var p = prevEl; cleanup(); if (p && p !== current.el) p.hidden = true; }, 230);
-      }
-    });
-  })();
+  // Swiping back: iPhone home screen apps already have their own swipe-back
+  // (it steps back through the app's history), so the app doesn't add a second one;
+  // two at once made a swipe go back two screens. When the phone does the swipe,
+  // the screen is shown without a second slide on top of the phone's own.
+  var navIntent = 0;
+  function markIntent() { navIntent = Date.now(); }
+  document.addEventListener('click', markIntent, true);
+  document.addEventListener('keydown', markIntent, true);
+  document.getElementById('tabbar').addEventListener('pointerdown', markIntent, true);
 
   // Online / offline
   window.addEventListener('offline', function () { PPUI.toast('You\'re offline. Some things won\'t load until you reconnect.'); });
