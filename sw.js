@@ -1,12 +1,12 @@
 // Paw Paradise app - service worker.
 // Saves the app on the phone so it opens instantly and works without signal.
 // After changing any app file, bump VERSION so phones pick up the new files.
-const VERSION = 'pp-app-v3';
+const VERSION = 'pp-app-v4';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './css/app.css',
   './js/vendor/supabase.js', './js/config.js', './js/legal.js', './js/content.js',
-  './js/ui.js', './js/features.js', './js/staff.js', './js/app.js',
+  './js/ui.js', './js/install-pictures.js', './js/features.js', './js/staff.js', './js/app.js',
   './images/logo.png', './images/icons/icon-192.png', './images/icons/icon-32.png', './images/icons/apple-touch-icon.png',
   // Gallery thumbnails (small), so the gallery grid shows even without signal
   './images/gallery/thumbs/aerial-view.jpg',
