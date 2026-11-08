@@ -21,8 +21,10 @@ var PPApp = (function () {
     faq:     { title: 'FAQs', tab: 'more', depth: 2, parent: 'info', render: function (el, slug, setTitle) { el.innerHTML = PPC.faqSubject(slug); setTitle(PPC.faqTitle(slug)); } },
     news:    { title: 'News', tab: 'more', depth: 1, render: function (el) { PPF.news(el); } },
     post:    { title: 'News', tab: 'more', depth: 2, parent: 'news', nocache: true, render: function (el, param, setTitle) { PPF.newsPost(el, param, setTitle); } },
+    offers:  { title: 'Block bookings & gifts', tab: 'home', depth: 1, render: function (el) { el.innerHTML = PPC.offers(); } },
     contact: { title: 'Contact', tab: 'more', depth: 1, render: function (el) { el.innerHTML = PPC.contact(); } },
-    staff:   { title: 'Staff', tab: 'more', depth: 1, nocache: true, render: function (el) { PPStaff.render(el); } }
+    staff:   { title: 'Staff', tab: 'more', depth: 1, nocache: true, render: function (el) { PPStaff.render(el); } },
+    staffsub:{ title: 'Staff', tab: 'more', depth: 2, parent: 'staff', nocache: true, render: function (el, which, setTitle) { PPStaff.renderSub(el, which, setTitle); } }
   };
 
   // ── Book tab: the Acuity booking page, filling the screen ──
@@ -84,6 +86,7 @@ var PPApp = (function () {
   function finishTransition() {
     if (!pending) return;
     clearTimeout(pending.timer);
+    document.documentElement.classList.remove('is-animating');
     screensEl.classList.remove('anim-push', 'anim-pop', 'anim-fade');
     Array.prototype.forEach.call(screensEl.children, function (s) {
       s.classList.remove('is-entering', 'is-leaving');
@@ -97,6 +100,7 @@ var PPApp = (function () {
     if (!h || h === 'install' || /access_token|type=recovery|error_description/.test(h)) return { name: 'home', key: 'home' };
     var parts = h.split('/');
     if (parts[0] === 'news' && parts[1]) return { name: 'post', key: 'news/' + parts[1], param: decodeURIComponent(parts[1]) };
+    if (parts[0] === 'staff' && parts[1]) return { name: 'staffsub', key: 'staff/' + parts[1], param: parts[1] };
     if (parts[0] === 'faq' && parts[1]) return { name: 'faq', key: 'faq/' + parts[1], param: decodeURIComponent(parts[1]) };
     if (ROUTES[parts[0]]) return { name: parts[0], key: parts[0] };
     return { name: 'home', key: 'home' };
@@ -151,7 +155,7 @@ var PPApp = (function () {
     // Top bar
     setTitle(titleOf(r, el));
     topbar.classList.toggle('is-home', r.name === 'home');
-    topbar.classList.toggle('on-staff', r.name === 'staff');
+    topbar.classList.toggle('on-staff', r.name === 'staff' || r.name === 'staffsub');
     topbar.classList.toggle('is-fixed', !!def.fixed);
     document.getElementById('book-external').hidden = r.name !== 'book';
     var canBack = def.depth > 0;
@@ -180,7 +184,8 @@ var PPApp = (function () {
       screensEl.classList.add(cls);
       el.classList.add('is-entering');
       old.classList.add('is-leaving');
-      pending = { old: old, timer: setTimeout(finishTransition, 340) };
+      document.documentElement.classList.add('is-animating');
+      pending = { old: old, timer: setTimeout(finishTransition, direction === 'fade' ? 170 : 270) };
     }
     if (def.onShow) def.onShow(el);
     onScroll();
@@ -264,10 +269,11 @@ var PPApp = (function () {
     try { localStorage.setItem('pp-glass', on ? 'off' : 'on'); } catch (e) {}
     syncGlass();
   }
+  // Status bar colour (Android) matches the green band behind the iPhone status bar
   function syncThemeColour() {
-    var bg = getComputedStyle(document.documentElement).getPropertyValue('--bar-solid').trim();
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta && bg) meta.setAttribute('content', bg);
+    if (meta) meta.setAttribute('content', dark ? '#0F1813' : '#24533A');
   }
   if (mq && mq.addEventListener) mq.addEventListener('change', function () { if (getTheme() === 'auto') applyTheme('auto'); });
 
@@ -452,7 +458,20 @@ var PPApp = (function () {
       setTimeout(function () { PPF.installSheet(); }, 700);
     }
     window.addEventListener('online', function () { if (current && current.name === 'book') loadBooking(current.el); });
+    prerenderTabs();
     finishStartup();
+  }
+
+  // Build the main tabs in the background so the first tap on each is instant
+  function prerenderTabs() {
+    var queue = ['home', 'gallery', 'more', 'book'];
+    function next() {
+      var name = queue.shift();
+      if (!name) return;
+      if (!cache[name]) cache[name] = makeScreen({ name: name, key: name });
+      (window.requestIdleCallback || function (fn) { setTimeout(fn, 120); })(next);
+    }
+    setTimeout(next, 600);
   }
 
   function finishStartup() {

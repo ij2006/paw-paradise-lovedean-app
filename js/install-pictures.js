@@ -129,5 +129,42 @@ var PPPics = (function () {
     return '<rect class="pic-ring" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="10" fill="none" stroke="' + RING + '" stroke-width="3.5"/>';
   }
 
-  return { moreButton: moreButton, menuShare: menuShare, oldToolbar: oldToolbar, shareSheet: shareSheet, addDialog: addDialog };
+  // ── Android (Chrome) ──
+  // 1: the ⋮ menu at the top right of Chrome
+  function chromeMenuButton() {
+    return frame(
+      '<text x="160" y="28" text-anchor="middle" font-size="12" fill="#8E8E93">Top of the screen in Chrome</text>' +
+      '<rect x="14" y="44" width="292" height="60" rx="14" fill="#fff" stroke="#D8D8DE"/>' +
+      '<path d="M30 74a7 7 0 1 1 14 0 7 7 0 1 1-14 0" fill="none" stroke="#5F6368" stroke-width="2"/>' +
+      '<rect x="56" y="58" width="168" height="32" rx="16" fill="#F1F3F4"/>' +
+      '<text x="140" y="79" text-anchor="middle" font-size="12.5" fill="#202124">…app.pages.dev</text>' +
+      '<rect x="234" y="64" width="20" height="20" rx="4" fill="none" stroke="#5F6368" stroke-width="2"/><text x="244" y="79" text-anchor="middle" font-size="11" font-weight="700" fill="#5F6368">1</text>' +
+      '<g fill="#202124"><circle cx="282" cy="66" r="2.6"/><circle cx="282" cy="74" r="2.6"/><circle cx="282" cy="82" r="2.6"/></g>' +
+      ring(282, 74, 17), 120);
+  }
+  // 2: Chrome's menu, with Add to Home screen circled
+  function chromeMenu() {
+    function row(y, label, bold) { return '<text x="96" y="' + (y + 5) + '" font-size="14" font-weight="' + (bold ? 700 : 400) + '" fill="#202124">' + label + '</text>'; }
+    return frame(
+      '<rect x="70" y="10" width="236" height="190" rx="14" fill="#fff" stroke="#D8D8DE"/>' +
+      row(36, 'New tab') + row(66, 'History') + row(96, 'Bookmarks') + row(126, 'Share…') +
+      '<g transform="translate(84 156)" fill="none" stroke="#202124" stroke-width="1.8" stroke-linecap="round"><rect x="-6" y="-9" width="12" height="18" rx="2.5"/><path d="M0 -3v6M-3 0h6"/></g>' +
+      row(156, 'Add to Home screen', true) + row(186, 'Settings') +
+      ringRect(76, 138, 224, 36), 210);
+  }
+  // 3: the confirm box, with Install circled
+  function chromeInstall() {
+    return frame(
+      '<rect x="24" y="14" width="272" height="132" rx="20" fill="#fff" stroke="#D8D8DE"/>' +
+      '<text x="44" y="46" font-size="16" font-weight="600" fill="#202124">Install app</text>' +
+      '<defs><clipPath id="pp-and-clip"><circle cx="64" cy="82" r="18"/></clipPath></defs>' +
+      '<image href="images/icons/icon-192.png" x="46" y="64" width="36" height="36" clip-path="url(#pp-and-clip)"/>' +
+      '<text x="92" y="80" font-size="14" fill="#202124">Paw Paradise</text>' +
+      '<text x="92" y="97" font-size="11" fill="#5F6368">…app.pages.dev</text>' +
+      '<text x="190" y="130" text-anchor="middle" font-size="14" font-weight="600" fill="#1A73E8">Cancel</text>' +
+      '<rect x="222" y="112" width="64" height="28" rx="14" fill="#1A73E8"/><text x="254" y="131" text-anchor="middle" font-size="13.5" font-weight="600" fill="#fff">Install</text>' +
+      ringRectXY(216, 106, 76, 40), 160);
+  }
+
+  return { moreButton: moreButton, chromeMenuButton: chromeMenuButton, chromeMenu: chromeMenu, chromeInstall: chromeInstall, menuShare: menuShare, oldToolbar: oldToolbar, shareSheet: shareSheet, addDialog: addDialog };
 })();

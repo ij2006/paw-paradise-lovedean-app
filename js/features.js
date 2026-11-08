@@ -491,11 +491,17 @@ var PPF = (function () {
         if (choice && choice.outcome === 'accepted') done();
         return;
       }
-      // Prompt not available (e.g. not Chrome, or already offered): show the menu route
-      show('<ol class="install-steps">' +
-        '<li><span class="step-n">1</span><span>Open this page in <strong>Chrome</strong>.</span></li>' +
-        '<li><span class="step-n">2</span><span>Tap the <strong>⋮</strong> menu at the top right.</span></li>' +
-        '<li><span class="step-n">3</span><span>Tap <strong>Install app</strong> (or <strong>Add to Home screen</strong>), then <strong>Install</strong>.</span></li></ol>' +
+      // Prompt not available (e.g. not Chrome, or already offered): show the steps with pictures
+      function step(n, text, pic) {
+        return '<li class="pic-step"><span class="step-n">' + n + '</span><div><p>' + text + '</p>' + pic + '</div></li>';
+      }
+      show('<p class="install-note">Make sure you\'re in <strong>Chrome</strong>, then:</p>' +
+        '<ol class="install-steps">' +
+          step(1, 'Tap the <strong>⋮</strong> menu at the top right of the screen.', PPPics.chromeMenuButton()) +
+          step(2, 'Tap <strong>Add to Home screen</strong> (on some phones it says <strong>Install app</strong>).', PPPics.chromeMenu()) +
+          step(3, 'Tap <strong>Install</strong>.', PPPics.chromeInstall()) +
+        '</ol>' +
+        '<p class="install-note">Paw Paradise then appears on your home screen, like any other app.</p>' +
         '<button type="button" class="text-link back-link" data-back>Back</button>');
     }
 

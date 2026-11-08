@@ -16,7 +16,12 @@ var PPStaff = (function () {
     route();
   }
 
-  function view(html) { var v = screenEl.querySelector('#st-view'); var l = screenEl.querySelector('#st-loading'); if (l) l.remove(); v.innerHTML = html; return v; }
+  function view(html) {
+    var v = screenEl.querySelector('#st-view'); var l = screenEl.querySelector('#st-loading'); if (l) l.remove();
+    v.innerHTML = html;
+    screenEl.dispatchEvent(new Event('scroll'));   // refresh the top bar title
+    return v;
+  }
   function msgEl(root, id, text, type) { var m = root.querySelector('#' + id); m.textContent = text || ''; m.className = 'form-msg form-msg--' + (type || 'info'); m.hidden = !text; }
 
   async function route() {
@@ -95,137 +100,146 @@ var PPStaff = (function () {
     route();
   }
 
+  // ── Staff home: a list ──────────────────────
   function dashboard(admin) {
+    var C = PPC;
     var v = view(
-      '<h1 class="inner-title">Hello, ' + esc(admin.name) + '</h1>' +
-      '<div class="staff-actions">' +
-        '<button type="button" class="btn btn-primary" id="st-write">Write a news post</button>' +
-        '<button type="button" class="btn btn-secondary" id="st-out">Sign out</button>' +
-      '</div>' +
-      '<div class="segmented segmented--full" role="tablist" aria-label="Staff sections">' +
-        '<button type="button" role="tab" id="tab-suggestions" aria-controls="panel-suggestions" data-st-tab="suggestions">Suggestions <span class="badge" id="ad-sugg-count"></span></button>' +
-        '<button type="button" role="tab" id="tab-pending" aria-controls="panel-pending" data-st-tab="pending">Photos <span class="badge" id="ad-photos-count"></span></button>' +
-        '<button type="button" role="tab" id="tab-live" aria-controls="panel-live" data-st-tab="live">Published <span class="badge" id="ad-live-count"></span></button>' +
-      '</div>' +
-      '<div role="tabpanel" id="panel-suggestions" aria-labelledby="tab-suggestions">' +
-        '<p class="hint">Sent from the website\'s Suggestions page, newest first. Only you can see these. Please delete them once dealt with, and anything older than 12 months (our privacy policy says we keep them for up to 12 months).</p>' +
-        '<div id="ad-sugg"></div></div>' +
-      '<div role="tabpanel" id="panel-pending" aria-labelledby="tab-pending" hidden>' +
-        '<p class="hint">Sent from the Gallery. Only you can see these until you approve them. Please don\'t approve photos showing children\'s faces, car number plates or anything you\'re unsure about.</p>' +
-        '<div id="ad-photos" class="staff-photos"></div></div>' +
-      '<div role="tabpanel" id="panel-live" aria-labelledby="tab-live" hidden>' +
-        '<p class="hint">These show in the Gallery under "From our visitors". Delete one if someone asks for it to be removed.</p>' +
-        '<div id="ad-photos-live" class="staff-photos"></div></div>');
-
+      '<h1 class="large-title">Staff</h1>' +
+      C.group('', [C.row('Signed in as ' + esc(admin.name), '', { icon: C.icon('key', 'green'), sub: esc(admin.email) })]) +
+      C.group('Inbox', [
+        C.cell({ href: '#/staff/suggestions', icon: C.icon('mail', 'green'), title: 'Suggestions', value: '<span id="cnt-sugg"></span>' }),
+        C.cell({ href: '#/staff/photos', icon: C.icon('camera', 'green'), title: 'Photos to approve', value: '<span id="cnt-pending"></span>' }),
+        C.cell({ href: '#/staff/published', icon: C.icon('camera', 'green'), title: 'Published visitor photos', value: '<span id="cnt-live"></span>' })
+      ]) +
+      C.group('News', [
+        C.cell({ attrs: 'id="st-write"', icon: C.icon('news', 'green'), title: 'Write a news post' }),
+        C.cell({ href: '#/news', icon: C.icon('news', 'green'), title: 'View news' })
+      ]) +
+      '<div class="group"><button type="button" class="cell cell--danger" id="st-out"><span class="cell-main"><span class="cell-title">Sign out</span></span></button></div>');
     v.querySelector('#st-out').addEventListener('click', signOut);
     v.querySelector('#st-write').addEventListener('click', function () { PPF.composeSheet(function () { PPApp.refresh('news'); }); });
-    v.querySelector('.segmented').addEventListener('click', function (e) {
-      var b = e.target.closest('[data-st-tab]'); if (b) selectTab(b.getAttribute('data-st-tab'));
-    });
-    v.addEventListener('click', onAction);
-    selectTab(activeTab);
-    loadSuggestions();
-    loadPhotos();
+    loadCounts();
   }
 
-  function selectTab(name) {
-    activeTab = name;
-    ['suggestions', 'pending', 'live'].forEach(function (t) {
-      var tab = screenEl.querySelector('#tab-' + t), panel = screenEl.querySelector('#panel-' + t);
-      if (!tab) return;
-      tab.setAttribute('aria-selected', t === name ? 'true' : 'false');
-      panel.hidden = t !== name;
-    });
+  async function loadCounts() {
+    var s = await db.from('suggestions').select('id');
+    var g = await db.from('gallery_submissions').select('approved');
+    var set = function (id, n) { var el = document.getElementById(id); if (el) el.textContent = n == null ? '' : String(n); };
+    if (s.data) set('cnt-sugg', s.data.length);
+    if (g.data) {
+      set('cnt-pending', g.data.filter(function (p) { return !p.approved; }).length);
+      set('cnt-live', g.data.filter(function (p) { return p.approved; }).length);
+    }
   }
 
-  async function loadSuggestions() {
-    var box = screenEl.querySelector('#ad-sugg');
-    if (!box) return;
-    box.innerHTML = '<div class="skeleton"></div>';
+  // ── Staff lists: suggestions / photos to approve / published ──
+  var SUB_TITLES = { suggestions: 'Suggestions', photos: 'Photos to approve', published: 'Published photos' };
+  async function renderSub(el, which, setTitle) {
+    setTitle(SUB_TITLES[which] || 'Staff');
+    el.innerHTML = '<h1 class="sr-only">' + (SUB_TITLES[which] || 'Staff') + '</h1><div id="st-list"><div class="pad"><div class="skeleton"></div></div></div>';
+    if (!db) return;
+    var admin = await PPF.getAdmin();
+    if (!admin) { el.querySelector('#st-list').innerHTML = '<p class="empty">Please sign in as staff first.</p>'; return; }
+    if (which === 'suggestions') return listSuggestions(el);
+    return listPhotos(el, which === 'published');
+  }
+
+  function chev() { return '<svg class="cell-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
+
+  async function listSuggestions(el) {
+    var box = el.querySelector('#st-list');
     var res = await db.from('suggestions').select('id, category, suggestion, name, email, created_at').order('created_at', { ascending: false });
-    if (res.error) { box.innerHTML = '<p class="form-msg form-msg--error">Could not load suggestions: ' + esc(res.error.message) + '</p>'; return; }
-    screenEl.querySelector('#ad-sugg-count').textContent = res.data.length || '';
-    if (!res.data.length) { box.innerHTML = '<p class="empty">No suggestions yet.</p>'; return; }
+    if (res.error) { box.innerHTML = '<p class="empty">Could not load suggestions: ' + esc(res.error.message) + '</p>'; return; }
+    var rows = res.data || [];
+    if (!rows.length) { box.innerHTML = '<p class="empty">No suggestions yet.</p>'; return; }
     var yearAgo = Date.now() - 365 * 864e5;
-    box.innerHTML = res.data.map(function (r) {
-      var who = r.name || r.email
-        ? esc(r.name || '') + (r.email ? ' <a href="mailto:' + esc(r.email) + '">' + esc(r.email) + '</a>' : '')
-        : '<span class="muted">Anonymous</span>';
-      var old = new Date(r.created_at).getTime() < yearAgo ? '<span class="tag-old">Over 12 months old</span>' : '';
-      return '<div class="group form-card staff-item">' +
-        '<div class="staff-item-head"><strong>' + esc(CATS[r.category] || r.category || 'Suggestion') + '</strong><span class="muted small">' + PPUI.fmtDate(r.created_at) + '</span></div>' + old +
-        '<p class="staff-text">' + esc(r.suggestion) + '</p>' +
-        '<div class="staff-item-foot"><span class="small">From: ' + who + '</span>' +
-          '<button type="button" class="btn btn-danger btn-sm" data-act="delete-sugg" data-id="' + r.id + '">Delete</button></div>' +
-      '</div>';
-    }).join('');
+    box.innerHTML = '<div class="group">' + rows.map(function (r, i) {
+      var old = new Date(r.created_at).getTime() < yearAgo;
+      return '<button type="button" class="cell cell--news" data-i="' + i + '">' +
+        '<span class="cell-main"><span class="cell-title">' + esc(CATS[r.category] || r.category || 'Suggestion') + '</span>' +
+        '<span class="cell-sub">' + PPUI.fmtDate(r.created_at) + ' · ' + (r.name || r.email ? esc(r.name || r.email) : 'Anonymous') + (old ? ' · over 12 months old' : '') + '</span>' +
+        '<span class="cell-excerpt">' + esc(r.suggestion) + '</span></span>' + chev() + '</button>';
+    }).join('') + '</div>' +
+    '<p class="group-foot">Only staff can see these. Please delete them once dealt with, and anything over 12 months old (our privacy policy says we keep them for up to 12 months).</p>';
+    box.querySelector('.group').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-i]'); if (!b) return;
+      var r = rows[+b.getAttribute('data-i')];
+      var s = PPUI.sheet({
+        title: esc(CATS[r.category] || r.category || 'Suggestion'),
+        html: '<p class="staff-text">' + esc(r.suggestion) + '</p>' +
+          '<p class="small muted">' + PPUI.fmtDate(r.created_at, true) + ' · From: ' + (r.name || r.email ? esc(r.name || '') + (r.email ? ' (' + esc(r.email) + ')' : '') : 'Anonymous') + '</p>' +
+          '<div class="action-btns">' +
+            (r.email ? '<a class="btn btn-primary btn-block" href="mailto:' + esc(r.email) + '?subject=Your%20Paw%20Paradise%20suggestion">Reply by email</a>' : '') +
+            '<button type="button" class="btn btn-danger btn-block" data-del>Delete suggestion</button>' +
+          '</div>',
+        onOpen: function (sheetEl, close) {
+          sheetEl.querySelector('[data-del]').addEventListener('click', async function () {
+            close();
+            if (!(await PPUI.confirm({ title: 'Delete this suggestion for good?', confirmText: 'Delete', danger: true }))) return;
+            var d = await db.from('suggestions').delete().eq('id', r.id);
+            if (d.error) { PPUI.toast('That did not work: ' + d.error.message, 'error'); return; }
+            PPUI.toast('Suggestion deleted'); listSuggestions(el);
+          });
+        }
+      });
+    });
   }
 
-  function photoCard(p, url, live) {
-    var who = [p.dog, p.name].filter(Boolean).map(esc).join(' with ') || '<span class="muted">No names given</span>';
-    var actions = live
-      ? '<button type="button" class="btn btn-danger btn-sm" data-act="delete-photo" data-id="' + p.id + '" data-path="' + esc(p.path) + '" data-live="1">Delete</button>'
-      : '<button type="button" class="btn btn-primary btn-sm" data-act="approve-photo" data-id="' + p.id + '" data-path="' + esc(p.path) + '">Approve</button>' +
-        '<button type="button" class="btn btn-danger btn-sm" data-act="delete-photo" data-id="' + p.id + '" data-path="' + esc(p.path) + '">Delete</button>';
-    return '<div class="group staff-photo">' +
-      (url ? '<img src="' + esc(url) + '" alt="Submitted photo' + (p.dog || p.name ? ': ' + esc([p.dog, p.name].filter(Boolean).join(' with ')) : '') + '" loading="lazy" />' : '<div class="photo-missing">Photo missing</div>') +
-      '<p>' + who + '</p><p class="muted small">' + PPUI.fmtDate(p.created_at) + '</p>' +
-      '<div class="staff-item-foot">' + actions + '</div>' +
-    '</div>';
-  }
-
-  async function loadPhotos() {
-    var box = screenEl.querySelector('#ad-photos'), liveBox = screenEl.querySelector('#ad-photos-live');
-    if (!box) return;
-    box.innerHTML = '<div class="skeleton"></div>'; liveBox.innerHTML = '';
-    var res = await db.from('gallery_submissions').select('id, name, dog, path, approved, created_at').order('created_at', { ascending: false });
-    if (res.error) { box.innerHTML = '<p class="form-msg form-msg--error">Could not load gallery photos: ' + esc(res.error.message) + '</p>'; return; }
-    var pending = res.data.filter(function (p) { return !p.approved; });
-    var live = res.data.filter(function (p) { return p.approved; });
-    screenEl.querySelector('#ad-photos-count').textContent = pending.length || '';
-    screenEl.querySelector('#ad-live-count').textContent = live.length || '';
+  async function listPhotos(el, live) {
+    var box = el.querySelector('#st-list');
+    var res = await db.from('gallery_submissions').select('id, name, dog, path, approved, created_at').eq('approved', live).order('created_at', { ascending: false });
+    if (res.error) { box.innerHTML = '<p class="empty">Could not load photos: ' + esc(res.error.message) + '</p>'; return; }
+    var rows = res.data || [];
+    if (!rows.length) { box.innerHTML = '<p class="empty">' + (live ? 'No visitor photos published yet.' : 'Nothing waiting. All caught up.') + '</p>'; return; }
     var urls = {};
-    if (pending.length) {
-      var signed = await db.storage.from('gallery-pending').createSignedUrls(pending.map(function (p) { return p.path; }), 3600);
+    if (!live) {
+      var signed = await db.storage.from('gallery-pending').createSignedUrls(rows.map(function (p) { return p.path; }), 3600);
       (signed.data || []).forEach(function (s) { if (s.signedUrl) urls[s.path] = s.signedUrl; });
+    } else {
+      rows.forEach(function (p) { urls[p.path] = db.storage.from('gallery-public').getPublicUrl(p.path).data.publicUrl; });
     }
-    box.innerHTML = pending.length ? pending.map(function (p) { return photoCard(p, urls[p.path], false); }).join('') : '<p class="empty">Nothing waiting. All caught up.</p>';
-    liveBox.innerHTML = live.length ? live.map(function (p) { return photoCard(p, db.storage.from('gallery-public').getPublicUrl(p.path).data.publicUrl, true); }).join('') : '<p class="empty">No visitor photos published yet.</p>';
-  }
-
-  async function onAction(e) {
-    var b = e.target.closest('[data-act]');
-    if (!b) return;
-    var id = b.getAttribute('data-id'), act = b.getAttribute('data-act');
-    if (act === 'approve-photo' || act === 'delete-photo') {
-      var path = b.getAttribute('data-path');
-      if (act === 'delete-photo' && !(await PPUI.confirm({ title: 'Delete this photo for good?', confirmText: 'Delete', danger: true }))) return;
-      b.disabled = true;
-      var err = null;
-      if (act === 'approve-photo') {
-        var mv = await db.storage.from('gallery-pending').move(path, path, { destinationBucket: 'gallery-public' });
-        if (mv.error) err = mv.error;
-        else { var up = await db.from('gallery_submissions').update({ approved: true }).eq('id', id); err = up.error; }
-      } else {
-        var bucket = b.getAttribute('data-live') ? 'gallery-public' : 'gallery-pending';
-        await db.storage.from(bucket).remove([path]);
-        var del = await db.from('gallery_submissions').delete().eq('id', id);
-        err = del.error;
-      }
-      if (err) { b.disabled = false; PPUI.toast('That did not work: ' + err.message, 'error'); return; }
-      PPUI.toast(act === 'approve-photo' ? 'Photo approved' : 'Photo deleted', 'success');
-      PPApp.refresh('gallery');
-      loadPhotos();
-      return;
-    }
-    if (act === 'delete-sugg') {
-      if (!(await PPUI.confirm({ title: 'Delete this suggestion for good?', confirmText: 'Delete', danger: true }))) return;
-      b.disabled = true;
-      var r2 = await db.from('suggestions').delete().eq('id', id);
-      if (r2.error) { b.disabled = false; PPUI.toast('That did not work: ' + r2.error.message, 'error'); return; }
-      PPUI.toast('Suggestion deleted');
-      loadSuggestions();
-    }
+    box.innerHTML = '<div class="group">' + rows.map(function (p, i) {
+      var who = [p.dog, p.name].filter(Boolean).join(' with ') || 'No names given';
+      return '<button type="button" class="cell" data-i="' + i + '">' +
+        (urls[p.path] ? '<img class="cell-thumb" src="' + esc(urls[p.path]) + '" alt="" loading="lazy" />' : '<span class="cell-thumb"></span>') +
+        '<span class="cell-main"><span class="cell-title">' + esc(who) + '</span><span class="cell-sub">' + PPUI.fmtDate(p.created_at) + '</span></span>' + chev() + '</button>';
+    }).join('') + '</div>' +
+    '<p class="group-foot">' + (live
+      ? 'These show in the Gallery under "From our visitors". Delete one if someone asks for it to be removed.'
+      : 'Only staff can see these until approved. Please don\'t approve photos showing children\'s faces, car number plates or anything you\'re unsure about.') + '</p>';
+    box.querySelector('.group').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-i]'); if (!b) return;
+      var p = rows[+b.getAttribute('data-i')];
+      var who = [p.dog, p.name].filter(Boolean).join(' with ') || 'No names given';
+      PPUI.sheet({
+        title: esc(who),
+        html: (urls[p.path] ? '<img class="staff-big" src="' + esc(urls[p.path]) + '" alt="Submitted photo: ' + esc(who) + '" />' : '<p class="empty">Photo missing</p>') +
+          '<p class="small muted center">' + PPUI.fmtDate(p.created_at, true) + '</p>' +
+          '<div class="action-btns">' +
+            (live ? '' : '<button type="button" class="btn btn-primary btn-block" data-approve>Approve and publish</button>') +
+            '<button type="button" class="btn btn-danger btn-block" data-del>Delete photo</button>' +
+          '</div>',
+        onOpen: function (sheetEl, close) {
+          var ap = sheetEl.querySelector('[data-approve]');
+          if (ap) ap.addEventListener('click', async function () {
+            ap.disabled = true;
+            var mv = await db.storage.from('gallery-pending').move(p.path, p.path, { destinationBucket: 'gallery-public' });
+            var err = mv.error;
+            if (!err) { var up = await db.from('gallery_submissions').update({ approved: true }).eq('id', p.id); err = up.error; }
+            if (err) { ap.disabled = false; PPUI.toast('That did not work: ' + err.message, 'error'); return; }
+            close(); PPUI.toast('Photo approved', 'success'); PPApp.refresh('gallery'); listPhotos(el, live);
+          });
+          sheetEl.querySelector('[data-del]').addEventListener('click', async function () {
+            close();
+            if (!(await PPUI.confirm({ title: 'Delete this photo for good?', confirmText: 'Delete', danger: true }))) return;
+            await db.storage.from(live ? 'gallery-public' : 'gallery-pending').remove([p.path]);
+            var d = await db.from('gallery_submissions').delete().eq('id', p.id);
+            if (d.error) { PPUI.toast('That did not work: ' + d.error.message, 'error'); return; }
+            PPUI.toast('Photo deleted'); PPApp.refresh('gallery'); listPhotos(el, live);
+          });
+        }
+      });
+    });
   }
 
   // Keep the "Staff" pill and More row in step with sign-in
@@ -247,6 +261,7 @@ var PPStaff = (function () {
 
   return {
     render: render,
+    renderSub: renderSub,
     isRecovering: function () { return recovering; },
     syncIndicators: syncIndicators
   };

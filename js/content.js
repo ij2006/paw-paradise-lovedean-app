@@ -79,7 +79,7 @@
   var FAQ_ICONS = { planning: ['calendar', 'green'], arrival: ['car', 'blue'], rules: ['rules', 'amber'], health: ['heart', 'red'], bookings: ['pound', 'grey'] };
 
   window.PPC = {
-    group: group, cell: cell, icon: icon,
+    group: group, cell: cell, icon: icon, row: info,
 
     // ── HOME ─────────────────────────────────
     home: function () {
@@ -102,7 +102,7 @@
         info('Session length', '50 minutes'),
         info('1–4 dogs', '£12'),
         info('5–8 dogs', '£15'),
-        cell({ href: '#/faq/bookings', title: 'Block bookings &amp; gift certificates' })
+        cell({ href: '#/offers', title: 'Block bookings &amp; gift certificates' })
       ]) +
       group('Opening hours', [
         info('April – October', '7am – 9pm', { sub: 'Monday to Saturday' }),
@@ -118,6 +118,30 @@
       group('', [
         cell({ href: '#/info', icon: icon('info', 'green'), title: 'Information &amp; FAQs' })
       ]);
+    },
+
+    // ── BLOCK BOOKINGS & GIFT CERTIFICATES ──
+    offers: function () {
+      var buy = function (label) {
+        return '<div class="home-book"><a class="btn btn-primary btn-block" href="#/book">' + label + '</a></div>';
+      };
+      return '<h1 class="sr-only">Block bookings and gift certificates</h1>' +
+        group('Block bookings', [
+          info('10 sessions for the price of 9', '', { sub: 'No expiry. Book each session whenever suits you.' }),
+          info('1–4 dogs', '£108'),
+          info('5–8 dogs', '£135')
+        ], 'You\'ll get a code to enter each time you book a session.') +
+        buy('Buy a block booking') +
+        group('Gift certificates', [
+          info('Covers 2 sessions', '', { sub: 'Can be used any time within 12 months' }),
+          info('1–4 dogs', '£24'),
+          info('5–8 dogs', '£30')
+        ], 'A lovely present for any dog owner.') +
+        buy('Buy a gift certificate') +
+        group('Refunds', [
+          cell({ href: 'mailto:' + C.email + '?subject=Block%20booking%20or%20gift%20certificate%20refund', icon: icon('mail', 'green'), title: 'Email us about a refund', sub: C.email })
+        ], 'You can cancel an unused block booking or gift certificate within 14 days of purchase for a full refund. After 14 days, or once a session from a block booking has been used, they can\'t be refunded.') +
+        '<p class="group-foot">Both are bought on the Book tab: choose the block booking or gift certificate option on the booking page.</p>';
     },
 
     // ── GALLERY ──────────────────────────────
@@ -145,8 +169,6 @@
             '<button type="button" role="radio" data-theme-set="dark">Dark</button>' +
             '<button type="button" role="radio" data-theme-set="auto">Auto</button>' +
           '</div></div>',
-        '<div class="cell cell--static">' + icon('glass', 'blue') + '<span class="cell-main"><span class="cell-title" id="glass-label">Liquid glass</span><span class="cell-sub">See-through, frosted look</span></span>' +
-          '<button type="button" class="switch" role="switch" aria-labelledby="glass-label" data-glass-toggle><span></span></button></div>',
         cell({ attrs: 'data-sheet="a11y"', icon: icon('a11y', 'blue'), title: 'Accessibility' })
       ]) +
       group('', [

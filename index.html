@@ -6,11 +6,11 @@
   <title>Paw Paradise Lovedean</title>
   <meta name="description" content="The Paw Paradise Lovedean app: book a secure, private dog field session in Lovedean, Hampshire." />
   <meta name="robots" content="noindex" />
-  <meta name="theme-color" content="#1C3D28" />
+  <meta name="theme-color" content="#24533A" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Paw Paradise" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="format-detection" content="telephone=no" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/png" sizes="32x32" href="images/icons/icon-32.png" />
@@ -30,7 +30,7 @@
       h.setAttribute('data-fontsize', g('pp-fontsize', 'md'));
       h.setAttribute('data-contrast', g('pp-contrast', 'off'));
       h.setAttribute('data-dyslexia', g('pp-dyslexia', 'off'));
-      h.setAttribute('data-glass', g('pp-glass', 'on'));
+      h.setAttribute('data-glass', 'off');
       h.setAttribute('data-motion', g('pp-motion', (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) ? 'reduced' : 'on'));
       if (window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)) h.classList.add('is-installed');
     })();

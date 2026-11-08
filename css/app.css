@@ -901,3 +901,45 @@ html[data-fontsize="xl"] .back-label { max-width: 70px; }
 .platform-emoji { font-size: 1.9rem; line-height: 1; }
 .photo-strip { scroll-padding: 0 16px; }
 .strip-item img { border-radius: 16px; }
+
+/* Quicker slides; pause the bar blur while a screen slides underneath (smoother on phones) */
+.anim-push .is-entering, .anim-push .is-leaving, .anim-pop .is-entering, .anim-pop .is-leaving { animation-duration: .26s !important; animation-timing-function: cubic-bezier(.22, .61, .36, 1) !important; }
+.anim-fade .is-entering { animation-duration: .15s !important; }
+.is-animating .tabbar, .is-animating .topbar.is-scrolled, .is-animating .topbar.is-fixed { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--bar-solid); }
+.is-animating .tabbar { background: var(--glass-list); }
+
+/* Solid look (liquid glass removed) */
+.tabbar, .topbar.is-scrolled, .topbar.is-fixed, .sheet { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.tabbar { background: var(--card); border-color: var(--hairline); box-shadow: 0 6px 24px rgba(31,38,32,.12); }
+[data-theme="dark"] .tabbar { box-shadow: 0 6px 24px rgba(0,0,0,.45); }
+.topbar.is-scrolled, .topbar.is-fixed { background: var(--bar-solid); }
+.sheet { background: var(--card); }
+.tabbar.is-dragging .tab-lens { background: rgba(36, 83, 58, .16); box-shadow: none; top: 5px; bottom: 5px; }
+[data-theme="dark"] .tabbar.is-dragging .tab-lens { background: rgba(169, 213, 182, .22); box-shadow: none; }
+.app { background: var(--bg) !important; }
+
+/* Staff lists */
+.cell--danger .cell-title { color: var(--danger); font-weight: 600; text-align: center; }
+.cell--danger .cell-main { align-items: center; }
+.cell-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; flex: none; background: var(--bg-2); }
+.staff-big { width: 100%; border-radius: 14px; margin-bottom: 8px; }
+.cell--news .cell-excerpt { -webkit-line-clamp: 3; }
+
+/* Fill the whole screen, up behind the iPhone status bar / Dynamic Island.
+   iPhone shows the time and battery in white there, so that strip is forest green
+   (dark green in dark mode). On phones without a notch the strip has no height. */
+.app::before {
+  display: block !important; content: ''; position: absolute; top: 0; left: 0; right: 0; z-index: 30;
+  height: var(--safe-top); background: #24533A; pointer-events: none; filter: none; opacity: 1; inset: 0 0 auto 0;
+}
+[data-theme="dark"] .app::before { background: #0F1813; }
+[data-contrast="on"] .app::before { background: #00260D; }
+[data-theme="dark"][data-contrast="on"] .app::before { background: #000; }
+.on-landing .app::before { display: none !important; }
+.fullscreen .fs-bar, .viewer-bar { padding-top: calc(6px + var(--safe-top)); }
+.splash { background: #F5F3EC; }
+
+/* Download page phone buttons: plain and matching the app */
+.platform-btn[data-platform], [data-theme="dark"] .platform-btn[data-platform] { background: var(--card); color: var(--text); border: 1.5px solid var(--hairline-strong); }
+.platform-btn[data-platform] small, [data-theme="dark"] .platform-btn[data-platform] small { color: var(--text-light); }
+.platform-btn.is-likely { box-shadow: none; border-color: var(--forest); }
