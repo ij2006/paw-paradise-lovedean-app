@@ -107,6 +107,14 @@ var PPF = (function () {
       PPUI.viewer(items, +t.getAttribute('data-index'));
     });
     el._drawGallery = function () { if (which === 'visitors' || which === 'all') draw(); };
+    // Lets a sideways swipe over the photos move between All / Photos / Videos / Yours
+    function shown() { return Array.prototype.filter.call(el.querySelectorAll('[data-gtab]'), function (b) { return !b.hidden; }); }
+    el._gallery = {
+      mosaic: mosaic,
+      index: function () { return shown().map(function (b) { return b.getAttribute('data-gtab'); }).indexOf(which); },
+      count: function () { return shown().length; },
+      select: function (i) { var b = shown()[i]; if (b) b.click(); }
+    };
     loadVisitorPhotos(el);
     PPUI.pullToRefresh(el, function () { return loadVisitorPhotos(el); });
   }

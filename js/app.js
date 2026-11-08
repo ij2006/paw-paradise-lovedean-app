@@ -650,6 +650,7 @@ var PPApp = (function () {
   (function () {
     var ORDER = ['home', 'book', 'gallery', 'more'];
     var sx = null, sy = 0, dx = 0, lastX = 0, lastT = 0, vel = 0, decided = 0, w = 0, el = null, idx = 0, nb = null, nbName = null, nbSide = 0;
+    var overPhotos = false, filterTo = -1, mosaic = null;   // Gallery: swiping over the photos changes All / Photos / Videos / Yours
     function neighbour(side) {
       var name = ORDER[idx + side];
       if (!name) return null;
@@ -682,6 +683,7 @@ var PPApp = (function () {
       if (idx < 0) return;
       sx = lastX = e.touches[0].clientX; sy = e.touches[0].clientY; lastT = e.timeStamp;
       dx = 0; vel = 0; decided = 0; w = screensEl.clientWidth; el = current.el; nb = null; nbSide = 0;
+      overPhotos = !!(el._gallery && e.target.closest('.mosaic')); filterTo = -1; mosaic = null;
     }, { passive: true });
     screensEl.addEventListener('touchmove', function (e) {
       if (sx === null) return;
@@ -691,16 +693,50 @@ var PPApp = (function () {
         if (ay > 10 && ay >= ax) { sx = null; return; }       // scrolling up/down
         if (ax < 10 || ax < ay * 1.3) return;
         decided = 1; sx = x;                                  // start following from here
-        el.style.willChange = 'transform'; el.style.transition = 'none';
+        if (overPhotos) {
+          // Over the photos: change filter if there's one that way; at the first or last
+          // filter the swipe carries on to the next tab as usual
+          var g = el._gallery, to = g.index() + ((x - lastX) < 0 ? 1 : -1);   // lastX is still where the finger started
+          if (to >= 0 && to < g.count()) { filterTo = to; mosaic = g.mosaic; mosaic.style.transition = 'none'; mosaic.style.willChange = 'transform, opacity'; }
+        }
+        if (filterTo < 0) { el.style.willChange = 'transform'; el.style.transition = 'none'; }
+      }
+      if (filterTo >= 0) {
+        dx = x - sx;
+        var fdt = Math.max(1, e.timeStamp - lastT); vel = (x - lastX) / fdt; lastX = x; lastT = e.timeStamp;
+        var wrong = (filterTo > el._gallery.index()) ? dx > 0 : dx < 0;   // dragged back past the start
+        var d = wrong ? dx * 0.2 : dx;
+        mosaic.style.transform = 'translate3d(' + d + 'px,0,0)';
+        mosaic.style.opacity = String(Math.max(0.35, 1 - Math.abs(d) / w));
+        return;
       }
       dx = x - sx;
       var dt = Math.max(1, e.timeStamp - lastT); vel = (x - lastX) / dt; lastX = x; lastT = e.timeStamp;
       place(dx);
     }, { passive: true });
+    function endFilter() {
+      var g = el._gallery, from = g.index(), dir = filterTo > from ? 1 : -1, m = mosaic, to = filterTo;
+      filterTo = -1; mosaic = null;
+      var go = (dir === 1 ? dx < 0 : dx > 0) && (Math.abs(dx) > w * 0.25 || (Math.abs(vel) > 0.4 && Math.abs(dx) > 40));
+      var t = 'transform .22s cubic-bezier(.2,.75,.3,1), opacity .22s';
+      m.style.transition = t;
+      if (!go) { m.style.transform = ''; m.style.opacity = ''; setTimeout(function () { m.style.transition = ''; m.style.willChange = ''; }, 240); return; }
+      m.style.transform = 'translate3d(' + (dir === 1 ? -w : w) * 0.6 + 'px,0,0)'; m.style.opacity = '0';
+      setTimeout(function () {
+        g.select(to);
+        m = g.mosaic;
+        m.style.transition = 'none';
+        m.style.transform = 'translate3d(' + (dir === 1 ? w : -w) * 0.4 + 'px,0,0)'; m.style.opacity = '0';
+        void m.offsetWidth;
+        m.style.transition = t; m.style.transform = ''; m.style.opacity = '';
+        setTimeout(function () { m.style.transition = ''; m.style.willChange = ''; }, 240);
+      }, 170);
+    }
     function end() {
       if (sx === null) return;
       sx = null;
       if (!decided) return;
+      if (filterTo >= 0) { endFilter(); return; }
       var go = nb && ((Math.abs(dx) > w * 0.3 && Math.sign(dx) === -nbSide) || (Math.abs(vel) > 0.4 && Math.abs(dx) > 40 && Math.sign(vel) === -nbSide));
       var t = 'transform .3s cubic-bezier(.2,.75,.3,1)';
       el.style.transition = t; if (nb) nb.style.transition = t;
