@@ -510,23 +510,31 @@ var PPF = (function () {
           '<button type="button" class="text-link back-link" data-back>Back</button>');
         return;
       }
-      // Safari 26+ hides Share behind the ••• button; older Safari has Share in the toolbar
+      // Safari 26+ hides Share behind a menu button; older Safari has Share in the toolbar
       var m = navigator.userAgent.match(/Version\/(\d+)/);
-      var newSafari = !ios || !m || +m[1] >= 26;
+      iphoneSteps(!ios || !m || +m[1] >= 26);
+    }
+
+    // Two sets of steps (newer and older Safari). Phones vary, so there's always a
+    // link to switch to the other set if the pictures don't match.
+    function iphoneSteps(newSafari) {
       function step(n, text, pic) {
         return '<li class="pic-step"><span class="step-n">' + n + '</span><div><p>' + text + '</p>' + pic + '</div></li>';
       }
       var steps = newSafari
-        ? step(1, 'Tap the <strong>menu button</strong> at the left of the address bar, at the bottom of the screen.', PPPics.moreButton()) +
+        ? step(1, 'Tap the <strong>menu button</strong> at the left of the address bar, at the bottom of the screen. On some iPhones it\'s <strong>•••</strong> instead, at the right of the address bar.', PPPics.moreButton()) +
           step(2, 'Tap <strong>Share</strong> at the top of the menu.', PPPics.menuShare()) +
           step(3, 'Scroll down and tap <strong>Add to Home Screen</strong>. If you can\'t see it, tap <strong>View More</strong> first.', PPPics.shareSheet(true)) +
           step(4, 'Leave <strong>Open as Web App</strong> on, then tap <strong>Add</strong>.', PPPics.addDialog(true))
-        : step(1, 'Tap the <strong>Share</strong> button at the bottom of the screen.', PPPics.oldToolbar()) +
+        : step(1, 'Tap the <strong>Share</strong> button at the bottom of the screen (a square with an arrow pointing up).', PPPics.oldToolbar()) +
           step(2, 'Scroll down and tap <strong>Add to Home Screen</strong>.', PPPics.shareSheet(false)) +
           step(3, 'Tap <strong>Add</strong>.', PPPics.addDialog(false));
       show('<p class="install-note">Make sure you\'re in <strong>Safari</strong>, then:</p>' +
         '<ol class="install-steps">' + steps + '</ol>' +
         '<p class="install-note">Paw Paradise then appears on your home screen, like any other app.</p>' +
+        '<div class="install-other"><p><strong>Doesn\'t look like your iPhone?</strong> Screens differ between iPhone models and iOS versions.</p>' +
+          '<button type="button" class="btn btn-secondary btn-block" data-other-steps="' + (newSafari ? 'old' : 'new') + '">' +
+            (newSafari ? 'Show steps for older iPhones' : 'Show steps for newer iPhones') + '</button></div>' +
         '<button type="button" class="text-link back-link" data-back>Back</button>');
     }
 
@@ -556,6 +564,8 @@ var PPF = (function () {
     body.addEventListener('click', function (e) {
       var p = e.target.closest('[data-platform]');
       if (p) { if (p.getAttribute('data-platform') === 'ios') iphone(); else androidInstall(); return; }
+      var o = e.target.closest('[data-other-steps]');
+      if (o) { iphoneSteps(o.getAttribute('data-other-steps') === 'new'); body.scrollTop = 0; var sc = body.closest('.sheet-body, .landing') || document.scrollingElement; if (sc) sc.scrollTop = 0; return; }
       if (e.target.closest('[data-back]')) { pick(); return; }
       if (e.target.closest('#copy-link')) {
         var url = location.origin + location.pathname;
