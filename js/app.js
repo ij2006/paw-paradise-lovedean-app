@@ -880,5 +880,10 @@ var PPApp = (function () {
 
   start();
 
+  // A tapped notification asks the open app to show the right Admin list
+  if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', function (e) {
+    if (e.data && typeof e.data.go === 'string' && /^#\/[a-z\/-]+$/.test(e.data.go)) navigate(e.data.go);
+  });
+
   return { go: go, back: back, refresh: refresh, syncThemeColour: syncThemeColour };
 })();

@@ -11,6 +11,7 @@
   var G = {
     info: '<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.6"/><circle cx="12" cy="16.6" r=".9" fill="currentColor" stroke="none"/>',
     news: '<rect x="4" y="5" width="16" height="14" rx="2.5"/><path d="M8 9.5h8M8 12.5h8M8 15.5h5"/>',
+    bell: '<path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 1.5h-14z"/><path d="M10 19.5a2 2 0 0 0 4 0"/>',
     mail: '<rect x="3.5" y="6" width="17" height="12" rx="2.5"/><path d="M4.5 7.5l7.5 6 7.5-6"/>',
     appearance: '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"/>',
     a11y: '<circle cx="12" cy="5.5" r="1.8" fill="currentColor" stroke="none"/><path d="M5.5 9l6.5 1.5L18.5 9M12 10.5V15M12 15l-3 5M12 15l3 5"/>',

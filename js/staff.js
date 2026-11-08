@@ -111,6 +111,11 @@ var PPStaff = (function () {
         C.cell({ href: '#/staff/photos', icon: C.icon('camera', 'green'), title: 'Photos to approve', value: '<span id="cnt-pending"></span>' }),
         C.cell({ href: '#/staff/published', icon: C.icon('camera', 'green'), title: 'Published visitor photos', value: '<span id="cnt-live"></span>' })
       ]) +
+      C.group('Notifications', [
+        '<div class="cell cell--static" id="push-cell">' + C.icon('bell', 'green') +
+          '<span class="cell-main"><span class="cell-title" id="push-label">Notify me on this phone</span><span class="cell-sub" id="push-sub">New suggestions and photos to approve</span></span>' +
+          '<button type="button" class="switch" role="switch" aria-checked="false" aria-labelledby="push-label" id="push-switch"><span></span></button></div>'
+      ]) +
       C.group('News', [
         C.cell({ attrs: 'id="st-write"', icon: C.icon('news', 'green'), title: 'Write a news post' }),
         C.cell({ href: '#/news', icon: C.icon('news', 'green'), title: 'View news' })
@@ -119,6 +124,61 @@ var PPStaff = (function () {
     v.querySelector('#st-out').addEventListener('click', signOut);
     v.querySelector('#st-write').addEventListener('click', function () { PPF.composeSheet(function () { PPApp.refresh('news'); }); });
     loadCounts();
+    setupPush(v);
+  }
+
+  // ── Phone notifications for admins ──
+  // Each admin's phone signs up here; Supabase then sends a notification to every
+  // signed-up phone when a suggestion or gallery photo comes in.
+  function pushSupported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+  function keyBytes(b64) {
+    var pad = '='.repeat((4 - b64.length % 4) % 4), raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  async function saveSub(sub) {
+    var j = sub.toJSON();
+    var r = await db.from('push_subscriptions').upsert({ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }, { onConflict: 'endpoint' });
+    return r.error;
+  }
+  async function setupPush(v) {
+    var sw = v.querySelector('#push-switch'), sub0 = v.querySelector('#push-sub');
+    if (!sw) return;
+    function set(on) { sw.setAttribute('aria-checked', on ? 'true' : 'false'); }
+    if (!pushSupported() || !PP_CONFIG.pushPublicKey) {
+      sw.disabled = true;
+      sub0.textContent = document.documentElement.classList.contains('is-installed')
+        ? 'This phone can\'t get notifications (needs iOS 16.4 or later)'
+        : 'Open the app from your home screen to turn this on';
+      return;
+    }
+    var reg = await navigator.serviceWorker.ready;
+    var existing = await reg.pushManager.getSubscription();
+    set(!!existing && Notification.permission === 'granted');
+    if (existing && Notification.permission === 'granted') saveSub(existing);   // keep it fresh
+    sw.addEventListener('click', async function () {
+      sw.disabled = true;
+      try {
+        var cur = await reg.pushManager.getSubscription();
+        if (sw.getAttribute('aria-checked') === 'true') {
+          if (cur) { await db.from('push_subscriptions').delete().eq('endpoint', cur.endpoint); await cur.unsubscribe(); }
+          set(false); PPUI.toast('Notifications off for this phone');
+          return;
+        }
+        var perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+          PPUI.toast('Notifications are blocked. Turn them on in iPhone Settings → Notifications → Paw Paradise.', 'error');
+          return;
+        }
+        cur = cur || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(PP_CONFIG.pushPublicKey) });
+        var err = await saveSub(cur);
+        if (err) { PPUI.toast('Couldn\'t turn on notifications: ' + err.message, 'error'); await cur.unsubscribe(); return; }
+        set(true); PPUI.toast('Notifications on for this phone');
+      } catch (e) {
+        PPUI.toast('Couldn\'t turn on notifications: ' + (e && e.message ? e.message : e), 'error');
+      } finally { sw.disabled = false; }
+    });
   }
 
   async function loadCounts() {

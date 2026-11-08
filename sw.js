@@ -2,7 +2,7 @@
 // Saves the app on the phone so it works without signal.
 // App code is always fetched fresh when online, so updates appear straight away.
 // Bumping VERSION after a change also clears old saved copies.
-const VERSION = 'pp-app-v26';
+const VERSION = 'pp-app-v27';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './css/app.css',
@@ -98,4 +98,32 @@ self.addEventListener('fetch', event => {
       return res;
     }).catch(() => caches.match(req, { ignoreSearch: true }))
   );
+});
+
+// ── Admin phone notifications ──
+// Supabase sends these when a suggestion or gallery photo comes in.
+self.addEventListener('push', event => {
+  let msg = {};
+  try { msg = event.data ? event.data.json() : {}; } catch (e) { msg = { body: event.data && event.data.text() }; }
+  event.waitUntil(self.registration.showNotification(msg.title || 'Paw Paradise', {
+    body: msg.body || '',
+    icon: './images/icons/pp-icon-192.png',
+    badge: './images/icons/pp-icon-192.png',
+    tag: msg.tag || undefined,
+    data: { url: msg.url || './#/staff' }
+  }));
+});
+
+// Tapping a notification opens the app on the right Admin list
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || './#/staff';
+  const hash = url.indexOf('#') >= 0 ? url.slice(url.indexOf('#')) : '#/staff';
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const w of wins) {
+      if ('focus' in w) { await w.focus(); w.postMessage({ go: hash }); return; }
+    }
+    if (self.clients.openWindow) await self.clients.openWindow('./' + hash);
+  })());
 });

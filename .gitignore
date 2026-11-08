@@ -1,2 +1,5 @@
 # Mac system files
 .DS_Store
+
+# Private key for admin notifications: goes into Supabase only, never GitHub
+supabase/vapid-private-key.txt

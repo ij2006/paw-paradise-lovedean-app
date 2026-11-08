@@ -20,6 +20,8 @@ var PP_CONFIG = {
   phone: '02394 222052',
   phoneLink: 'tel:+442394222052',
   what3words: 'display.sway.liberated',
+  // Public key for admin phone notifications (the matching private key lives only in Supabase)
+  pushPublicKey: 'BEPFLzYigeZZ4hrXosUFgt-o_tRyuaWUC9N7r5ax5NBc60xIFWZZsCg-WG7v__WBOikegB9WFGoyYIyuiE6JFdc',
   googleMaps: 'https://maps.app.goo.gl/GwPX8b4bw3bJ3x6UA',
   appleMaps: 'https://maps.apple/p/vT0BXsQ7kg.1cP',
   postcode: 'PO8 0QN',
