@@ -816,7 +816,7 @@ var PPApp = (function () {
         localStorage.setItem('pp-install-id', id);
       }
       var last = +localStorage.getItem('pp-install-last') || 0;
-      if (Date.now() - last < 6 * 3600 * 1000) return;   // at most every 6 hours
+      if (Date.now() - last < 30 * 60 * 1000) return;   // a reopen within 30 minutes counts as the same visit
       var device = /iPhone|iPad|iPod/.test(navigator.userAgent) ? 'iphone' : /Android/.test(navigator.userAgent) ? 'android' : 'other';
       window.db.rpc('app_ping', { install_id: id, device: device }).then(function (r) {
         if (!r.error) localStorage.setItem('pp-install-last', String(Date.now()));
@@ -913,7 +913,10 @@ var PPApp = (function () {
 
   start();
 
-  // More → App settings: switch the anonymous app count on or off
+  // Coming back to the app after a while counts as opening it again
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) countInstall(); });
+
+  // Privacy Policy: switch the anonymous app count on or off
   document.addEventListener('click', function (e) {
     var sw = e.target.closest('#count-switch');
     if (!sw) return;

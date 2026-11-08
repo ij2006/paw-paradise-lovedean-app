@@ -111,12 +111,7 @@ var PPStaff = (function () {
         C.cell({ href: '#/staff/photos', icon: C.icon('camera', 'green'), title: 'Photos to approve', value: '<span id="cnt-pending"></span>' }),
         C.cell({ href: '#/staff/published', icon: C.icon('camera', 'green'), title: 'Published visitor photos', value: '<span id="cnt-live"></span>' })
       ]) +
-      C.group('App', [
-        C.row('Installed copies', '<span id="inst-total">…</span>'),
-        C.row('Opened in the last 30 days', '<span id="inst-30">…</span>'),
-        C.row('Opened in the last 7 days', '<span id="inst-7">…</span>')
-      ]) +
-            C.group('Notifications', [
+      C.group('Notifications', [
         '<div class="cell cell--static" id="push-cell">' + C.icon('bell', 'green') +
           '<span class="cell-main"><span class="cell-title" id="push-label">Notify me on this phone</span><span class="cell-sub" id="push-sub">New suggestions and photos to approve</span></span>' +
           '<button type="button" class="switch" role="switch" aria-checked="false" aria-labelledby="push-label" id="push-switch"><span></span></button></div>'
@@ -125,21 +120,34 @@ var PPStaff = (function () {
         C.cell({ attrs: 'id="st-write"', icon: C.icon('news', 'green'), title: 'Write a news post' }),
         C.cell({ href: '#/news', icon: C.icon('news', 'green'), title: 'View news' })
       ]) +
+      C.group('', [C.cell({ href: '#/staff/usage', icon: C.icon('chart', 'green'), title: 'App usage' })]) +
       '<div class="group"><button type="button" class="cell cell--danger" id="st-out"><span class="cell-main"><span class="cell-title">Sign out</span></span></button></div>');
     v.querySelector('#st-out').addEventListener('click', signOut);
     v.querySelector('#st-write').addEventListener('click', function () { PPF.composeSheet(function () { PPApp.refresh('news'); }); });
     loadCounts();
     setupPush(v);
-    loadInstalls(v);
   }
 
-  // ── How many people have the app ──
-  async function loadInstalls(v) {
+  // ── App usage page ──
+  async function showUsage(el) {
+    var list = el.querySelector('#st-list');
     var r = await db.rpc('app_install_stats');
-    var set = function (id, val) { var el = v.querySelector(id); if (el) el.textContent = val; };
-    if (r.error || !r.data) { ['#inst-total', '#inst-30', '#inst-7'].forEach(function (id) { set(id, '–'); }); return; }
-    set('#inst-total', r.data.total + (r.data.total ? ' (' + r.data.iphone + ' iPhone, ' + r.data.android + ' Android)' : ''));
-    set('#inst-30', r.data.last30); set('#inst-7', r.data.last7);
+    if (r.error || !r.data) {
+      list.innerHTML = '<p class="empty">Usage numbers aren\'t available yet. Run the app usage SQL in Supabase to switch them on.</p>';
+      return;
+    }
+    var d = r.data, n = function (x) { return Number(x || 0).toLocaleString('en-GB'); };
+    list.innerHTML =
+      '<div class="stat-tiles">' +
+        '<div class="stat-tile"><span class="stat-num">' + n(d.total) + '</span><span class="stat-label">Total downloads</span>' +
+          (d.total ? '<span class="stat-sub">' + n(d.iphone) + ' iPhone · ' + n(d.android) + ' Android</span>' : '') + '</div>' +
+        '<div class="stat-tile"><span class="stat-num">' + n(d.active) + '</span><span class="stat-label">Active users</span><span class="stat-sub">Opened in the last 3 months</span></div>' +
+      '</div>' +
+      PPC.group('Times the app was opened', [
+        PPC.row('Last 7 days', n(d.opens7)),
+        PPC.row('Last 30 days', n(d.opens30)),
+        PPC.row('Lifetime', n(d.opensTotal))
+      ], 'Counts start from when app usage was switched on. Phones that turned off counting in the Privacy Policy aren\'t included.');
   }
 
   // ── Phone notifications for admins ──
@@ -208,7 +216,7 @@ var PPStaff = (function () {
   }
 
   // ── Staff lists: suggestions / photos to approve / published ──
-  var SUB_TITLES = { suggestions: 'Suggestions', photos: 'Photos to approve', published: 'Published photos' };
+  var SUB_TITLES = { suggestions: 'Suggestions', photos: 'Photos to approve', published: 'Published photos', usage: 'App usage' };
   async function renderSub(el, which, setTitle) {
     setTitle(SUB_TITLES[which] || 'Admin');
     el.innerHTML = '<h1 class="sr-only">' + (SUB_TITLES[which] || 'Admin') + '</h1><div id="st-list"><div class="pad"><div class="skeleton"></div></div></div>';
@@ -216,6 +224,7 @@ var PPStaff = (function () {
     var admin = await PPF.getAdmin();
     if (!admin) { el.querySelector('#st-list').innerHTML = '<p class="empty">Please sign in as admin first.</p>'; return; }
     if (which === 'suggestions') return listSuggestions(el);
+    if (which === 'usage') return showUsage(el);
     return listPhotos(el, which === 'published');
   }
 

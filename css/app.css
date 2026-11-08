@@ -1085,3 +1085,11 @@ html.fit-stretch .splash { position: absolute; }
 .switch--small { width: 40px; height: 24px; }
 .switch--small span { top: 2px; left: 2px; width: 20px; height: 20px; }
 .switch--small[aria-checked="true"] span { transform: translateX(16px); }
+
+/* Admin → App usage: the two headline numbers */
+.stat-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 16px 6px; }
+.stat-tile { background: var(--card); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 2px; box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,.06)); }
+.stat-num { font-size: 2rem; font-weight: 700; color: var(--forest); line-height: 1.1; font-variant-numeric: tabular-nums; }
+[data-theme="dark"] .stat-num { color: #A9D5B6; }
+.stat-label { font-weight: 600; font-size: .95rem; color: var(--text); }
+.stat-sub { font-size: .78rem; color: var(--text-light); }
