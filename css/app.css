@@ -1076,3 +1076,7 @@ html.fit-stretch .splash { position: absolute; }
 .hero { margin-top: 12px; }
 /* Let the Book button's soft shadow show properly (it was being cut into a box) */
 .screen > .home-book { contain: none; }
+/* Book tab: invisible strips down each side so a swipe there changes tab instead of reaching the calendar */
+.swipe-strip { position: absolute; top: 0; bottom: 0; width: 26px; z-index: 3; touch-action: pan-y; }
+.swipe-strip--left { left: 0; }
+.swipe-strip--right { right: 0; }

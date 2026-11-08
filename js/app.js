@@ -31,6 +31,8 @@ var PPApp = (function () {
   function renderBook(el) {
     el.innerHTML =
       '<h1 class="sr-only">Book a session</h1>' +
+      // Narrow strips down each side, over the booking calendar, so you can still swipe between tabs here
+      '<div class="swipe-strip swipe-strip--left" aria-hidden="true"></div><div class="swipe-strip swipe-strip--right" aria-hidden="true"></div>' +
       '<div class="booking-loading" id="booking-loading"><span class="spinner" aria-hidden="true"></span><p>Loading booking…</p>' +
         '<p id="booking-slow" hidden>Taking a while? <a href="' + PP_CONFIG.acuity.all + '" target="_blank" rel="noopener">Open booking in your browser</a></p></div>' +
       '<div class="booking-offline" id="booking-offline" hidden><p><strong>You\'re offline</strong></p><p>Connect to the internet to book a session.</p><button type="button" class="btn btn-primary" id="booking-retry">Try again</button></div>';
@@ -265,7 +267,7 @@ var PPApp = (function () {
   // the screen for its own swipe-back, which held up the start of each page slide,
   // and its swipe only worked once it had a picture. The app's own swipes (below)
   // work on every page, every time. Android keeps the real history for its Back button.
-  var OWN_HISTORY = false;   // off: iPhone's own swipe-back is used (it worked more reliably)
+  var OWN_HISTORY = window.navigator.standalone === true;
 
   // Change screen now. quiet = no slide (the screen is already in place after a swipe)
   // History: the main tabs share one entry at the bottom, and only pages opened from
@@ -584,8 +586,9 @@ var PPApp = (function () {
   screensEl.addEventListener('pointercancel', unwarm, { passive: true });
   screensEl.addEventListener('scroll', function () { if (warm) unwarm(); }, { passive: true, capture: true });
 
-  // Swipe in from the left edge to go back (iPhone): the previous screen shows
-  // underneath and follows your finger. Works on every inner page, every time.
+  // On a page you've opened, swipe right (anywhere, not just from the edge) to go
+  // back to the page you came from. The previous page shows underneath and follows
+  // your finger.
   (function () {
     var sx = null, sy = 0, dx = 0, lastX = 0, lastT = 0, vel = 0, el = null, prevEl = null, decided = false, w = 0, startHash = '';
     function setX(d) {
@@ -595,24 +598,25 @@ var PPApp = (function () {
     function cleanup() {
       [el, prevEl].forEach(function (n) { if (n) { n.style.transition = ''; n.style.transform = ''; n.style.zIndex = ''; n.style.willChange = ''; } });
       if (prevEl && current && prevEl !== current.el) prevEl.hidden = true;
+      if (el && current && el !== current.el) el.hidden = true;
     }
     screensEl.addEventListener('touchstart', function (e) {
       sx = null;
-      if (!OWN_HISTORY || pending || !current || PPUI.hasLayer() || ROUTES[current.name].depth === 0) return;
-      var x = e.touches[0].clientX;
-      if (x > 30) return;
-      sx = lastX = x; sy = e.touches[0].clientY; lastT = e.timeStamp; dx = 0; vel = 0; decided = false;
+      if (pending || !current || PPUI.hasLayer() || ROUTES[current.name].depth === 0 || e.touches.length > 1) return;
+      if (e.target.closest('.photo-strip, input, textarea, select, iframe, [data-noswipe]')) return;
+      sx = lastX = e.touches[0].clientX; sy = e.touches[0].clientY; lastT = e.timeStamp; dx = 0; vel = 0; decided = false;
       el = current.el; w = screensEl.clientWidth; prevEl = null; startHash = location.hash;
     }, { passive: true });
     screensEl.addEventListener('touchmove', function (e) {
       if (sx === null) return;
       var x = e.touches[0].clientX, y = e.touches[0].clientY;
       if (!decided) {
-        if (Math.abs(y - sy) > 12 && Math.abs(y - sy) > Math.abs(x - sx)) { sx = null; return; }
-        if (x - sx < 8) return;
-        decided = true;
+        var ax = x - sx, ay = Math.abs(y - sy);
+        if ((ay > 10 && ay >= Math.abs(ax)) || ax < -10) { sx = null; return; }   // scrolling, or swiping the wrong way
+        if (ax < 10 || ax < ay * 1.3) return;
+        decided = true; sx = x;
         var prevKey = stack[stack.length - 2];
-        var r = prevKey ? parse('#/' + prevKey) : parse('#/' + (ROUTES[current.name].parent || ROUTES[current.name].tab));
+        var r = parse('#/' + (prevKey || ROUTES[current.name].parent || ROUTES[current.name].tab));
         if (!cache[r.key] || ROUTES[r.name].nocache) { if (cache[r.key]) cache[r.key].remove(); cache[r.key] = makeScreen(r); }
         prevEl = cache[r.key];
         prevEl.hidden = false; prevEl.style.zIndex = '1'; el.style.zIndex = '2';
@@ -623,28 +627,23 @@ var PPApp = (function () {
       var dt = Math.max(1, e.timeStamp - lastT); vel = (x - lastX) / dt; lastX = x; lastT = e.timeStamp;
       setX(dx);
     }, { passive: true });
-    screensEl.addEventListener('touchend', function () {
+    function end() {
       if (sx === null) return;
       sx = null;
       if (!decided) return;
-      var go = dx > w * 0.35 || vel > 0.45;
-      prevEl.style.transition = el.style.transition = 'transform .28s cubic-bezier(.32,.72,0,1)';
+      var go = dx > w * 0.3 || (vel > 0.4 && dx > 40);
+      prevEl.style.transition = el.style.transition = 'transform .3s cubic-bezier(.2,.75,.3,1)';
       setX(go ? w : 0);
       setTimeout(function () {
         if (!go || location.hash !== startHash) { cleanup(); return; }
         afterNav = cleanup;
         setTimeout(function () { if (afterNav === cleanup) { afterNav = null; cleanup(); } }, 800);
         back(true);
-      }, 290);
-    });
+      }, 310);
+    }
+    screensEl.addEventListener('touchend', end);
+    screensEl.addEventListener('touchcancel', end);
   })();
-
-  // Timing of the last tap, shown on the hidden "Screen check" page, so a slow
-  // page change on a real phone can be measured
-  var T = window.PPNavTiming = {};
-  document.addEventListener('touchstart', function () { T.down = performance.now(); }, true);
-  document.addEventListener('touchend', function () { T.up = performance.now(); }, true);
-  document.addEventListener('click', function () { T.click = performance.now(); }, true);
 
   // On a main tab, swipe left or right to move to the next or previous tab.
   // Both pages follow your finger, side by side.
@@ -723,6 +722,12 @@ var PPApp = (function () {
     screensEl.addEventListener('touchend', end);
     screensEl.addEventListener('touchcancel', end);
   })();
+
+  // Timing of the last page change, shown on the hidden "Screen check" page
+  var T = window.PPNavTiming = {};
+  document.addEventListener('touchstart', function () { T.down = performance.now(); }, true);
+  document.addEventListener('touchend', function () { T.up = performance.now(); }, true);
+  document.addEventListener('click', function () { T.click = performance.now(); }, true);
 
   var navIntent = 0;
   function markIntent() { navIntent = Date.now(); }
