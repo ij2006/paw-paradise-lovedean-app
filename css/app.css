@@ -616,7 +616,7 @@ h2, h3 { font-family: var(--font-body); font-style: normal; }
 .landing { min-height: 100%; display: flex; justify-content: center; background: var(--bg); padding: calc(28px + var(--safe-top)) 20px calc(28px + var(--safe-bottom)); }
 .landing-inner { width: 100%; max-width: 440px; text-align: center; }
 .landing-logo { width: 120px; height: 120px; margin: 4px auto 16px; border-radius: 50%; box-shadow: 0 4px 16px rgba(0,0,0,.14); }
-.landing-title { font-family: var(--font-body); font-style: normal; font-weight: 700; font-size: 1.85rem; letter-spacing: -0.02em; line-height: 1.15; color: var(--text); margin: 0 0 8px; }
+.landing-title { font-family: var(--font-body); font-style: normal; font-weight: 700; font-size: 1.85rem; letter-spacing: -0.02em; line-height: 1.15; color: var(--text); margin: 0 0 20px; }
 .landing-sub { font-size: 1rem; color: var(--text-mid); margin: 0 auto 22px; max-width: 34ch; }
 .landing-card { text-align: left; background: var(--card); border-radius: 20px; padding: 20px; box-shadow: 0 0 0 1px var(--hairline), 0 6px 24px rgba(28,61,40,.08); }
 .landing-card .install-q { font-weight: 600; color: var(--text); margin-bottom: 12px; text-align: center; }
@@ -624,3 +624,13 @@ h2, h3 { font-family: var(--font-body); font-style: normal; }
 .install-done { text-align: center; padding: 6px 0; }
 .install-done p { margin: 0 0 4px; }
 .install-done-tick { width: 52px; height: 52px; margin: 0 auto 10px !important; border-radius: 50%; background: #3A6645; color: #fff; font-size: 1.6rem; display: flex; align-items: center; justify-content: center; }
+
+/* iPhone picture guide */
+.install-note { font-size: .92rem; color: var(--text-mid); margin: 0 0 6px; }
+.install-steps li.pic-step { align-items: flex-start; }
+.pic-step > div { flex: 1; min-width: 0; }
+.pic-step p { margin: 3px 0 10px; color: var(--text); }
+.pic { display: block; width: 100%; height: auto; max-width: 340px; }
+.pic-pulse { transform-box: fill-box; transform-origin: center; animation: picPulse 1.6s ease-out infinite; }
+@keyframes picPulse { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(1.5); opacity: 0; } }
+[data-motion="reduced"] .pic-pulse { display: none; }

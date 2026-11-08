@@ -434,12 +434,23 @@ var PPF = (function () {
           '<button type="button" class="text-link back-link" data-back>Back</button>');
         return;
       }
-      show('<ol class="install-steps">' +
-        '<li><span class="step-n">1</span><span>Make sure you\'re in <strong>Safari</strong>.</span></li>' +
-        '<li><span class="step-n">2</span><span>Tap the <strong>Share</strong> button <span class="share-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> (a square with an arrow, at the bottom of the screen).</span></li>' +
-        '<li><span class="step-n">3</span><span>Scroll down and tap <strong>Add to Home Screen</strong>.</span></li>' +
-        '<li><span class="step-n">4</span><span>Tap <strong>Add</strong>. Paw Paradise appears on your home screen.</span></li></ol>' +
-        (ios ? '<div class="share-hint" aria-hidden="true"><span>Share is down here</span><svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 4v15M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : '') +
+      // Safari 26+ hides Share behind the ••• button; older Safari has Share in the toolbar
+      var m = navigator.userAgent.match(/Version\/(\d+)/);
+      var newSafari = !ios || !m || +m[1] >= 26;
+      function step(n, text, pic) {
+        return '<li class="pic-step"><span class="step-n">' + n + '</span><div><p>' + text + '</p>' + pic + '</div></li>';
+      }
+      var steps = newSafari
+        ? step(1, 'Tap the <strong>•••</strong> button next to the address bar, at the bottom of the screen.', PPPics.moreButton()) +
+          step(2, 'Tap <strong>Share</strong>.', PPPics.menuShare()) +
+          step(3, 'Scroll down and tap <strong>Add to Home Screen</strong>.', PPPics.shareSheet()) +
+          step(4, 'Leave <strong>Open as Web App</strong> on, then tap <strong>Add</strong>.', PPPics.addDialog(true))
+        : step(1, 'Tap the <strong>Share</strong> button at the bottom of the screen.', PPPics.oldToolbar()) +
+          step(2, 'Scroll down and tap <strong>Add to Home Screen</strong>.', PPPics.shareSheet()) +
+          step(3, 'Tap <strong>Add</strong>.', PPPics.addDialog(false));
+      show('<p class="install-note">Make sure you\'re in <strong>Safari</strong>, then:</p>' +
+        '<ol class="install-steps">' + steps + '</ol>' +
+        '<p class="install-note">Paw Paradise then appears on your home screen, like any other app.</p>' +
         '<button type="button" class="text-link back-link" data-back>Back</button>');
     }
 
