@@ -311,7 +311,6 @@ var PPApp = (function () {
       '<div class="landing-inner">' +
         '<img class="landing-logo" src="images/logo.png" alt="Paw Paradise Lovedean logo" width="120" height="120" />' +
         '<h1 class="landing-title">Get the Paw Paradise app</h1>' +
-        '<p class="landing-sub">Book sessions, check opening times and see the gallery, right from your home screen.</p>' +
         '<div class="landing-card" id="landing-install"></div>' +
         '<p class="landing-foot">Prefer the website? <a href="' + C.website + '">pawparadiselovedean.co.uk</a></p>' +
       '</div>';
@@ -360,7 +359,17 @@ var PPApp = (function () {
     var splash = document.getElementById('splash');
     setTimeout(function () { splash.classList.add('is-gone'); setTimeout(function () { splash.remove(); }, 400); }, 450);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-      navigator.serviceWorker.register('sw.js').catch(function () {});
+      // When a new version takes over, reload once so it shows straight away
+      var hadController = !!navigator.serviceWorker.controller, reloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (!hadController || reloaded) return;
+        reloaded = true;
+        if (!PPUI.hasLayer()) location.reload();
+      });
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
+        // Check for a new version whenever the app comes back to the front
+        document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') reg.update().catch(function () {}); });
+      }).catch(function () {});
     }
   }
 

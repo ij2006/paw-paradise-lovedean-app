@@ -1,7 +1,8 @@
 // Paw Paradise app - service worker.
-// Saves the app on the phone so it opens instantly and works without signal.
-// After changing any app file, bump VERSION so phones pick up the new files.
-const VERSION = 'pp-app-v4';
+// Saves the app on the phone so it works without signal.
+// App code is always fetched fresh when online, so updates appear straight away.
+// Bumping VERSION after a change also clears old saved copies.
+const VERSION = 'pp-app-v5';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './css/app.css',
@@ -80,6 +81,18 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // App files and photos: instant from the saved copy, refreshed in the background
-  event.respondWith(staleWhileRevalidate(req));
+  // Photos: instant from the saved copy, refreshed in the background
+  if (/\.(png|jpe?g|gif|webp|svg|ico)$/i.test(url.pathname)) {
+    event.respondWith(staleWhileRevalidate(req));
+    return;
+  }
+
+  // App code (JS, CSS, manifest): always fetch the latest when online, use the saved copy offline.
+  // This means updates show up the first time the app is opened after they go live.
+  event.respondWith(
+    fetch(req).then(res => {
+      if (res && res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }
+      return res;
+    }).catch(() => caches.match(req, { ignoreSearch: true }))
+  );
 });
