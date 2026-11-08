@@ -407,7 +407,14 @@ var PPF = (function () {
   // ── POP-UPS ─────────────────────────────────
   function legalSheet(which) {
     var doc = PP_LEGAL[which] || PP_LEGAL.privacy;
-    PPUI.sheet({ title: doc.title, tall: true, html: '<div class="legal">' + doc.html + '</div>' });
+    var extra = '';
+    if (which === 'privacy') {
+      // The opt-out for the anonymous app count lives quietly here, where it's explained
+      var off = false; try { off = localStorage.getItem('pp-count') === 'off'; } catch (e) {}
+      extra = '<div class="count-optout"><span id="count-label">Count this phone in app totals</span>' +
+        '<button type="button" class="switch switch--small" role="switch" id="count-switch" aria-labelledby="count-label" aria-checked="' + (off ? 'false' : 'true') + '"><span></span></button></div>';
+    }
+    PPUI.sheet({ title: doc.title, tall: true, html: '<div class="legal">' + doc.html + '</div>' + extra });
   }
 
   var A11Y = { size: 'pp-fontsize', contrast: 'pp-contrast', dyslexia: 'pp-dyslexia', motion: 'pp-motion' };

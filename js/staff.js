@@ -111,7 +111,12 @@ var PPStaff = (function () {
         C.cell({ href: '#/staff/photos', icon: C.icon('camera', 'green'), title: 'Photos to approve', value: '<span id="cnt-pending"></span>' }),
         C.cell({ href: '#/staff/published', icon: C.icon('camera', 'green'), title: 'Published visitor photos', value: '<span id="cnt-live"></span>' })
       ]) +
-      C.group('Notifications', [
+      C.group('App', [
+        C.row('Installed copies', '<span id="inst-total">…</span>'),
+        C.row('Opened in the last 30 days', '<span id="inst-30">…</span>'),
+        C.row('Opened in the last 7 days', '<span id="inst-7">…</span>')
+      ]) +
+            C.group('Notifications', [
         '<div class="cell cell--static" id="push-cell">' + C.icon('bell', 'green') +
           '<span class="cell-main"><span class="cell-title" id="push-label">Notify me on this phone</span><span class="cell-sub" id="push-sub">New suggestions and photos to approve</span></span>' +
           '<button type="button" class="switch" role="switch" aria-checked="false" aria-labelledby="push-label" id="push-switch"><span></span></button></div>'
@@ -125,6 +130,16 @@ var PPStaff = (function () {
     v.querySelector('#st-write').addEventListener('click', function () { PPF.composeSheet(function () { PPApp.refresh('news'); }); });
     loadCounts();
     setupPush(v);
+    loadInstalls(v);
+  }
+
+  // ── How many people have the app ──
+  async function loadInstalls(v) {
+    var r = await db.rpc('app_install_stats');
+    var set = function (id, val) { var el = v.querySelector(id); if (el) el.textContent = val; };
+    if (r.error || !r.data) { ['#inst-total', '#inst-30', '#inst-7'].forEach(function (id) { set(id, '–'); }); return; }
+    set('#inst-total', r.data.total + (r.data.total ? ' (' + r.data.iphone + ' iPhone, ' + r.data.android + ' Android)' : ''));
+    set('#inst-30', r.data.last30); set('#inst-7', r.data.last7);
   }
 
   // ── Phone notifications for admins ──

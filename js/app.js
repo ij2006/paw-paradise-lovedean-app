@@ -803,6 +803,27 @@ var PPApp = (function () {
   }
 
   // ── Start ───────────────────────────────────
+  // Anonymous count of installed copies (shown in Admin). A random code is kept on the
+  // phone; nothing personal is sent. Can be switched off in More → App settings.
+  function countInstall() {
+    try {
+      if (!document.documentElement.classList.contains('is-installed')) return;
+      if (localStorage.getItem('pp-count') === 'off' || !window.db) return;
+      var id = localStorage.getItem('pp-install-id');
+      if (!id) {
+        id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+          : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
+        localStorage.setItem('pp-install-id', id);
+      }
+      var last = +localStorage.getItem('pp-install-last') || 0;
+      if (Date.now() - last < 6 * 3600 * 1000) return;   // at most every 6 hours
+      var device = /iPhone|iPad|iPod/.test(navigator.userAgent) ? 'iphone' : /Android/.test(navigator.userAgent) ? 'android' : 'other';
+      window.db.rpc('app_ping', { install_id: id, device: device }).then(function (r) {
+        if (!r.error) localStorage.setItem('pp-install-last', String(Date.now()));
+      });
+    } catch (e) {}
+  }
+
   function showMoved() {
     document.body.innerHTML = '<main style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;background:#F5F3EC;color:#1F2620;font-family:system-ui,sans-serif">' +
       '<img src="images/logo.png" alt="" width="110" height="110" />' +
@@ -813,6 +834,7 @@ var PPApp = (function () {
 
   function start() {
     if (window.__ppMoved) { showMoved(); return; }
+    countInstall();
     var installed = document.documentElement.classList.contains('is-installed');
     var forceApp = /[?&]app\b/.test(location.search);
     if (!installed && !forceApp && !PPStaff.isRecovering()) {
@@ -890,6 +912,24 @@ var PPApp = (function () {
   }
 
   start();
+
+  // More → App settings: switch the anonymous app count on or off
+  document.addEventListener('click', function (e) {
+    var sw = e.target.closest('#count-switch');
+    if (!sw) return;
+    var on = sw.getAttribute('aria-checked') !== 'true';
+    sw.setAttribute('aria-checked', on ? 'true' : 'false');
+    try {
+      if (on) { localStorage.removeItem('pp-count'); localStorage.removeItem('pp-install-last'); countInstall(); }
+      else {
+        localStorage.setItem('pp-count', 'off');
+        var id = localStorage.getItem('pp-install-id');
+        if (id && window.db) window.db.rpc('app_forget', { install_id: id }).then(function () {});
+        localStorage.removeItem('pp-install-id'); localStorage.removeItem('pp-install-last');
+      }
+    } catch (err) {}
+    PPUI.toast(on ? 'Thanks, this phone is counted' : 'This phone is no longer counted');
+  });
 
   // A tapped notification asks the open app to show the right Admin list
   if (navigator.serviceWorker) navigator.serviceWorker.addEventListener('message', function (e) {
