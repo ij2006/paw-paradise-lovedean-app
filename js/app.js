@@ -231,7 +231,15 @@ var PPApp = (function () {
     show(r, direction);
   }
 
-  function go(name) { navIntent = Date.now(); location.hash = '#/' + name; }
+  function go(name) { navigate('#/' + name); }
+
+  // Change screen now and record it in the history (so Back and swiping work)
+  function navigate(hash) {
+    navIntent = Date.now();
+    if (location.hash === hash) return;
+    history.pushState(null, '', hash);
+    onHashChange();
+  }
 
   function back() {
     navIntent = Date.now();
@@ -323,6 +331,12 @@ var PPApp = (function () {
     }
     // A link inside a sheet closes the sheet first
     if (PPUI.hasLayer() && t.closest('#layers')) PPUI.closeTop();
+    // Open the screen straight away, in this same tap, rather than waiting for the
+    // browser to report the address change a moment later
+    if (t.matches('a[href^="#/"]') && !e.defaultPrevented && !t.target) {
+      e.preventDefault();
+      navigate(t.getAttribute('href'));
+    }
   });
   backBtn.addEventListener('click', back);
 
