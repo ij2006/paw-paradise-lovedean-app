@@ -683,7 +683,13 @@ var PPApp = (function () {
       if (idx < 0) return;
       sx = lastX = e.touches[0].clientX; sy = e.touches[0].clientY; lastT = e.timeStamp;
       dx = 0; vel = 0; decided = 0; w = screensEl.clientWidth; el = current.el; nb = null; nbSide = 0;
-      overPhotos = !!(el._gallery && e.target.closest('.mosaic')); filterTo = -1; mosaic = null;
+      // The photo area: from the top of the photos all the way down to the bottom of the screen
+      overPhotos = false;
+      if (el._gallery) {
+        var mr = el._gallery.mosaic.getBoundingClientRect(), t0 = e.touches[0];
+        overPhotos = t0.clientY >= mr.top && t0.clientX >= mr.left - 16 && t0.clientX <= mr.right + 16;
+      }
+      filterTo = -1; mosaic = null;
     }, { passive: true });
     screensEl.addEventListener('touchmove', function (e) {
       if (sx === null) return;
