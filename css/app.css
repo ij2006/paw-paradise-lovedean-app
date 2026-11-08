@@ -531,7 +531,7 @@ h2, h3 { font-family: var(--font-body); font-style: normal; }
 .install-steps li:last-child { border-bottom: 0; }
 .step-n { flex: none; width: 28px; height: 28px; border-radius: 50%; background: var(--forest); color: var(--bg); font-weight: 700; font-size: .9rem; display: flex; align-items: center; justify-content: center; }
 .share-icon { display: inline-flex; vertical-align: -3px; color: #0A84FF; }
-.share-hint { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 10px; color: #0A84FF; font-weight: 600; font-size: .9rem; animation: nudge 1.4s ease-in-out infinite; }
+.share-hint { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 10px; color: #0062CC; font-weight: 600; font-size: .9rem; animation: nudge 1.4s ease-in-out infinite; }
 @keyframes nudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
 .back-link { margin-top: 8px; }
 
@@ -610,3 +610,17 @@ h2, h3 { font-family: var(--font-body); font-style: normal; }
 .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 .toast--success { background: #1C4A2A; }
 .toast--error { background: #7A1E14; }
+
+/* ── "Get the app" page (shown in a browser) ─── */
+.on-landing body { overflow: auto; background: var(--bg); }
+.landing { min-height: 100%; display: flex; justify-content: center; background: var(--bg); padding: calc(28px + var(--safe-top)) 20px calc(28px + var(--safe-bottom)); }
+.landing-inner { width: 100%; max-width: 440px; text-align: center; }
+.landing-logo { width: 120px; height: 120px; margin: 4px auto 16px; border-radius: 50%; box-shadow: 0 4px 16px rgba(0,0,0,.14); }
+.landing-title { font-family: var(--font-body); font-style: normal; font-weight: 700; font-size: 1.85rem; letter-spacing: -0.02em; line-height: 1.15; color: var(--text); margin: 0 0 8px; }
+.landing-sub { font-size: 1rem; color: var(--text-mid); margin: 0 auto 22px; max-width: 34ch; }
+.landing-card { text-align: left; background: var(--card); border-radius: 20px; padding: 20px; box-shadow: 0 0 0 1px var(--hairline), 0 6px 24px rgba(28,61,40,.08); }
+.landing-card .install-q { font-weight: 600; color: var(--text); margin-bottom: 12px; text-align: center; }
+.landing-foot { font-size: .86rem; color: var(--text-light); margin-top: 22px; }
+.install-done { text-align: center; padding: 6px 0; }
+.install-done p { margin: 0 0 4px; }
+.install-done-tick { width: 52px; height: 52px; margin: 0 auto 10px !important; border-radius: 50%; background: #3A6645; color: #fff; font-size: 1.6rem; display: flex; align-items: center; justify-content: center; }

@@ -296,8 +296,37 @@ var PPApp = (function () {
   window.addEventListener('offline', function () { PPUI.toast('You\'re offline. Some things won\'t load until you reconnect.'); });
   window.addEventListener('online', function () { PPUI.toast('Back online', 'success'); });
 
+  // ── "Get the app" page ──────────────────────
+  // In a normal browser people only see how to add the app to their phone.
+  // The full app runs once it's opened from the home screen.
+  // Add ?app to the address to see the full app in a browser (for testing).
+  function showLanding() {
+    var C = PP_CONFIG;
+    var landing = document.getElementById('landing');
+    document.getElementById('app').hidden = true;
+    document.documentElement.classList.add('on-landing');
+    document.title = 'Get the Paw Paradise app';
+    landing.hidden = false;
+    landing.innerHTML =
+      '<div class="landing-inner">' +
+        '<img class="landing-logo" src="images/logo.png" alt="Paw Paradise Lovedean logo" width="120" height="120" />' +
+        '<h1 class="landing-title">Get the Paw Paradise app</h1>' +
+        '<p class="landing-sub">Book sessions, check opening times and see the gallery, right from your home screen.</p>' +
+        '<div class="landing-card" id="landing-install"></div>' +
+        '<p class="landing-foot">Prefer the website? <a href="' + C.website + '">pawparadiselovedean.co.uk</a></p>' +
+      '</div>';
+    PPF.renderInstall(landing.querySelector('#landing-install'), { hero: false, focus: false });
+  }
+
   // ── Start ───────────────────────────────────
   function start() {
+    var installed = document.documentElement.classList.contains('is-installed');
+    var forceApp = /[?&]app\b/.test(location.search);
+    if (!installed && !forceApp && !PPStaff.isRecovering()) {
+      showLanding();
+      finishStartup();
+      return;
+    }
     var r = parse(location.hash);
     var recovery = PPStaff.isRecovering();
     if (recovery) r = { name: 'staff', key: 'staff' };
@@ -324,10 +353,12 @@ var PPApp = (function () {
       setTimeout(function () { PPF.installSheet(); }, 700);
     }
     window.addEventListener('online', function () { if (current && current.name === 'book') loadBooking(current.el); });
+    finishStartup();
+  }
 
+  function finishStartup() {
     var splash = document.getElementById('splash');
     setTimeout(function () { splash.classList.add('is-gone'); setTimeout(function () { splash.remove(); }, 400); }, 450);
-
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       navigator.serviceWorker.register('sw.js').catch(function () {});
     }

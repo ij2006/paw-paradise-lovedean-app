@@ -13,7 +13,9 @@ It is completely separate from the website. Nothing in this folder changes the w
 | **Gallery** | Photo and video grid with a full-screen swipeable viewer, approved visitor photos, and "Send us your photos" (staff approve before anything shows) |
 | **More** | Add app to your phone, Information & FAQs, News, Contact, appearance (light/dark/auto), accessibility, Privacy Policy, Terms, Staff login |
 
-**Add app to your phone:** share `https://app.pawparadiselovedean.co.uk/?install` (on the website, in booking emails, or as a QR code). It opens the app with an iPhone / Android choice: Android installs in one tap, and iPhone shows step-by-step Add to Home Screen instructions. Apple doesn't let websites install themselves, so iPhone always needs Safari's Share → Add to Home Screen.
+**In a browser, people only see "Get the app".** Opening the address in Safari or Chrome shows a single page: pick iPhone or Android. Android installs in one tap, and iPhone shows step-by-step Add to Home Screen instructions. The full app only runs once it's opened from the home screen. (Apple doesn't let websites install themselves, so iPhone always needs Safari's Share → Add to Home Screen.)
+- To see the full app in a browser for testing, add `?app` to the address, e.g. `https://paw-paradise-lovedean-app.pages.dev/?app`
+- Staff password-reset links still open the app's reset screen in the browser
 
 **Staff area** (More → Staff login): same login as the website. Read and delete suggestions sent from the website, approve or delete visitor photos, and write or delete news posts.
 
@@ -51,7 +53,7 @@ From this folder:
 python3 -m http.server 8000
 ```
 
-Then open http://localhost:8000. Use your browser's phone view (in Chrome, open DevTools and turn on the device toolbar) to see it at phone size.
+Then open http://localhost:8000/?app (the `?app` shows the full app instead of the "Get the app" page). Use your browser's phone view (in Chrome, open DevTools and turn on the device toolbar) to see it at phone size.
 
 ## Putting it online (separate from the website)
 
@@ -64,7 +66,7 @@ Then on a phone, open the address and:
 - **iPhone:** Safari → Share → **Add to Home Screen**
 - **Android:** Chrome → **Install app** (or ⋮ → Install app)
 
-The More tab also has an "Add the app to your home screen" card that shows these steps.
+Anyone opening the address in a browser sees these steps automatically.
 
 ## Making changes
 

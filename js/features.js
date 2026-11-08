@@ -401,72 +401,83 @@ var PPF = (function () {
 
   // "Add app to phone": pick iPhone or Android.
   // Android installs in one tap (Chrome's own prompt). iPhone needs Safari's Share > Add to Home Screen.
-  function installSheet() {
+  // Used both in the pop-up (More tab) and on the "Get the app" page people see in a browser.
+  function renderInstall(body, opts) {
+    opts = opts || {};
     var ios = isIOS(), android = /android/i.test(navigator.userAgent);
-    var hero = '<div class="install-hero"><img src="images/icons/apple-touch-icon.png" alt="" width="64" height="64" /><p><strong>Paw Paradise</strong><br>Opens full screen from your home screen, like any other app.</p></div>';
+    var hero = opts.hero === false ? '' : '<div class="install-hero"><img src="images/icons/apple-touch-icon.png" alt="" width="64" height="64" /><p><strong>Paw Paradise</strong><br>Opens full screen from your home screen, like any other app.</p></div>';
+    function show(html, focus) {
+      body.innerHTML = hero + html;
+      if (focus !== false) { var f = body.querySelector('button, a'); if (f) f.focus({ preventScroll: true }); }
+    }
+    function done() {
+      show('<div class="install-done"><p class="install-done-tick" aria-hidden="true">✓</p><p><strong>Added to your phone</strong></p><p>Open <strong>Paw Paradise</strong> from your home screen.</p></div>');
+      if (opts.onInstalled) opts.onInstalled();
+    }
+
+    function pick(focus) {
+      if (isInstalled()) { show('<p class="center">You\'re already using the app. 🎉</p>', focus); return; }
+      show('<p class="install-q">Which phone do you have?</p>' +
+        '<div class="platform-pick">' +
+          '<button type="button" class="platform-btn' + (ios ? ' is-likely' : '') + '" data-platform="ios"><span aria-hidden="true">📱</span>iPhone<small>Add to Home Screen</small></button>' +
+          '<button type="button" class="platform-btn' + (android ? ' is-likely' : '') + '" data-platform="android"><span aria-hidden="true">🤖</span>Android<small>Install in one tap</small></button>' +
+        '</div>', focus);
+    }
+
+    function iphone() {
+      var notSafari = /CriOS|FxiOS|EdgiOS|GSA|FBAN|FBAV|Instagram/i.test(navigator.userAgent);
+      if (ios && notSafari) {
+        show('<ol class="install-steps">' +
+          '<li><span class="step-n">1</span><span>Copy this link and open it in <strong>Safari</strong>. iPhones only let Safari add apps to the home screen.</span></li>' +
+          '<li><span class="step-n">2</span><span>In Safari, tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>.</span></li></ol>' +
+          '<button type="button" class="btn btn-primary btn-block" id="copy-link">Copy link</button>' +
+          '<button type="button" class="text-link back-link" data-back>Back</button>');
+        return;
+      }
+      show('<ol class="install-steps">' +
+        '<li><span class="step-n">1</span><span>Make sure you\'re in <strong>Safari</strong>.</span></li>' +
+        '<li><span class="step-n">2</span><span>Tap the <strong>Share</strong> button <span class="share-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> (a square with an arrow, at the bottom of the screen).</span></li>' +
+        '<li><span class="step-n">3</span><span>Scroll down and tap <strong>Add to Home Screen</strong>.</span></li>' +
+        '<li><span class="step-n">4</span><span>Tap <strong>Add</strong>. Paw Paradise appears on your home screen.</span></li></ol>' +
+        (ios ? '<div class="share-hint" aria-hidden="true"><span>Share is down here</span><svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 4v15M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : '') +
+        '<button type="button" class="text-link back-link" data-back>Back</button>');
+    }
+
+    async function androidInstall() {
+      if (deferredPrompt) {
+        // Chrome's own install prompt: one tap to confirm
+        deferredPrompt.prompt();
+        var choice = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        if (choice && choice.outcome === 'accepted') done();
+        return;
+      }
+      // Prompt not available (e.g. not Chrome, or already offered): show the menu route
+      show('<ol class="install-steps">' +
+        '<li><span class="step-n">1</span><span>Open this page in <strong>Chrome</strong>.</span></li>' +
+        '<li><span class="step-n">2</span><span>Tap the <strong>⋮</strong> menu at the top right.</span></li>' +
+        '<li><span class="step-n">3</span><span>Tap <strong>Install app</strong> (or <strong>Add to Home screen</strong>), then <strong>Install</strong>.</span></li></ol>' +
+        '<button type="button" class="text-link back-link" data-back>Back</button>');
+    }
+
+    body.addEventListener('click', function (e) {
+      var p = e.target.closest('[data-platform]');
+      if (p) { if (p.getAttribute('data-platform') === 'ios') iphone(); else androidInstall(); return; }
+      if (e.target.closest('[data-back]')) { pick(); return; }
+      if (e.target.closest('#copy-link')) {
+        var url = location.origin + location.pathname;
+        (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { PPUI.toast('Link copied. Paste it into Safari.'); }, function () { PPUI.toast(url); });
+      }
+    });
+    window.addEventListener('appinstalled', function () { if (document.contains(body)) done(); });
+    pick(opts.focus);
+  }
+
+  function installSheet() {
     PPUI.sheet({
       title: 'Add app to your phone',
       html: '<div id="install-body"></div>',
-      onOpen: function (el, close) {
-        var body = el.querySelector('#install-body');
-        function show(html) { body.innerHTML = hero + html; var f = body.querySelector('button, a'); if (f) f.focus({ preventScroll: true }); }
-
-        function pick() {
-          if (isInstalled()) { show('<p class="center">You\'re already using the app. 🎉</p>'); return; }
-          show('<p>Which phone do you have?</p>' +
-            '<div class="platform-pick">' +
-              '<button type="button" class="platform-btn' + (ios ? ' is-likely' : '') + '" data-platform="ios"><span aria-hidden="true">📱</span>iPhone<small>Add to Home Screen</small></button>' +
-              '<button type="button" class="platform-btn' + (android ? ' is-likely' : '') + '" data-platform="android"><span aria-hidden="true">🤖</span>Android<small>Install in one tap</small></button>' +
-            '</div>');
-        }
-
-        function iphone() {
-          var notSafari = /CriOS|FxiOS|EdgiOS|GSA|FBAN|FBAV|Instagram/i.test(navigator.userAgent);
-          if (ios && notSafari) {
-            show('<ol class="install-steps">' +
-              '<li><span class="step-n">1</span><span>Copy this link and open it in <strong>Safari</strong>. iPhones only let Safari add apps to the home screen.</span></li>' +
-              '<li><span class="step-n">2</span><span>In Safari, tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>.</span></li></ol>' +
-              '<button type="button" class="btn btn-primary btn-block" id="copy-link">Copy link</button>' +
-              '<button type="button" class="text-link back-link" data-back>Back</button>');
-            return;
-          }
-          show('<ol class="install-steps">' +
-            '<li><span class="step-n">1</span><span>Make sure you\'re in <strong>Safari</strong>.</span></li>' +
-            '<li><span class="step-n">2</span><span>Tap the <strong>Share</strong> button <span class="share-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> (a square with an arrow, at the bottom of the screen).</span></li>' +
-            '<li><span class="step-n">3</span><span>Scroll down and tap <strong>Add to Home Screen</strong>.</span></li>' +
-            '<li><span class="step-n">4</span><span>Tap <strong>Add</strong>. Paw Paradise appears on your home screen.</span></li></ol>' +
-            (ios ? '<div class="share-hint" aria-hidden="true"><span>Share is down here</span><svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 4v15M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : '') +
-            '<button type="button" class="text-link back-link" data-back>Back</button>');
-        }
-
-        async function androidInstall() {
-          if (deferredPrompt) {
-            // Chrome's own install prompt: one tap to confirm
-            deferredPrompt.prompt();
-            var choice = await deferredPrompt.userChoice;
-            deferredPrompt = null;
-            if (choice && choice.outcome === 'accepted') { close(); PPUI.toast('Added. Find Paw Paradise on your home screen.', 'success'); }
-            return;
-          }
-          // Prompt not available (e.g. not Chrome, or already offered): show the menu route
-          show('<ol class="install-steps">' +
-            '<li><span class="step-n">1</span><span>Open this page in <strong>Chrome</strong>.</span></li>' +
-            '<li><span class="step-n">2</span><span>Tap the <strong>⋮</strong> menu at the top right.</span></li>' +
-            '<li><span class="step-n">3</span><span>Tap <strong>Install app</strong> (or <strong>Add to Home screen</strong>), then <strong>Install</strong>.</span></li></ol>' +
-            '<button type="button" class="text-link back-link" data-back>Back</button>');
-        }
-
-        body.addEventListener('click', function (e) {
-          var p = e.target.closest('[data-platform]');
-          if (p) { if (p.getAttribute('data-platform') === 'ios') iphone(); else androidInstall(); return; }
-          if (e.target.closest('[data-back]')) { pick(); return; }
-          if (e.target.closest('#copy-link')) {
-            var url = location.origin + location.pathname + '?install';
-            (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { PPUI.toast('Link copied. Paste it into Safari.'); }, function () { PPUI.toast(url); });
-          }
-        });
-        pick();
-      }
+      onOpen: function (el) { renderInstall(el.querySelector('#install-body')); }
     });
   }
 
@@ -478,7 +489,7 @@ var PPF = (function () {
   }
 
   return {
-    getAdmin: getAdmin, gallery: gallery, installSheet: installSheet, isInstalled: isInstalled,
+    getAdmin: getAdmin, gallery: gallery, installSheet: installSheet, renderInstall: renderInstall, isInstalled: isInstalled, isIOS: isIOS,
     news: news, newsPost: newsPost, composeSheet: composeSheet, openSheet: openSheet
   };
 })();
