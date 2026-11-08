@@ -199,13 +199,15 @@ var PPApp = (function () {
       // Hold on the first frame until the phone has actually drawn it, then play.
       // Otherwise a busy first frame swallows the start of the slide and it looks like a jump.
       a1.pause(); a2.pause();
+      T.show = performance.now(); T.frame = T.done = null; T.navUp = T.up; T.navClick = T.click;
       requestAnimationFrame(function () {
+        T.frame = performance.now();
         if (pending && pending.anims && pending.anims[0] === a1) { a1.play(); a2.play(); }
       });
       document.documentElement.classList.add('is-animating');
       var mine = { old: old, anims: [a1, a2], timer: setTimeout(finishTransition, 900) };
       pending = mine;
-      a1.onfinish = function () { if (pending === mine) finishTransition(); };
+      a1.onfinish = function () { T.done = performance.now(); if (pending === mine) finishTransition(); };
     }
     if (!motion) { el.style.transform = ''; el.style.zIndex = ''; el.style.willChange = ''; }
     if (def.onShow) def.onShow(el);
@@ -252,7 +254,7 @@ var PPApp = (function () {
   // the screen for its own swipe-back, which held up the start of each page slide,
   // and its swipe only worked once it had a picture. The app's own swipes (below)
   // work on every page, every time. Android keeps the real history for its Back button.
-  var OWN_HISTORY = window.navigator.standalone === true;
+  var OWN_HISTORY = false;   // off: iPhone's own swipe-back is used (it worked more reliably)
 
   // Change screen now. quiet = no slide (the screen is already in place after a swipe)
   function navigate(hash, quiet) {
@@ -362,7 +364,7 @@ var PPApp = (function () {
       navigate(t.getAttribute('href'));
     }
   });
-  backBtn.addEventListener('click', back);
+  backBtn.addEventListener('click', function () { back(); });
 
   // Tap the version number 5 times: shows how the app has measured the screen
   // (handy for checking it fits a particular phone).
@@ -376,7 +378,9 @@ var PPApp = (function () {
     PPUI.sheet({ title: 'Screen check', html: '<div class="group">' +
       PPC.row('Screen', f.screen || '?') + PPC.row('App area', f.viewport || '?') +
       PPC.row('Notch (iOS)', (i.top || 0) + 'pt') + PPC.row('Home bar (iOS)', (i.bottom || 0) + 'pt') +
-      PPC.row('Notch used', getComputedStyle(document.documentElement).getPropertyValue('--safe-top-fb').trim() || '0px', { sub: 'Only if iOS reports none' }) + PPC.row('Stretched', f.stretched ? 'Yes' : 'No') + PPC.row('Opened', ((performance.now() / 1000) | 0) + 's ago') +
+      PPC.row('Notch used', getComputedStyle(document.documentElement).getPropertyValue('--safe-top-fb').trim() || '0px', { sub: 'Only if iOS reports none' }) + PPC.row('Stretched', f.stretched ? 'Yes' : 'No') +
+      (function () { var t = window.PPNavTiming || {}, ms = function (a, b) { return (a && b) ? Math.round(b - a) + ' ms' : '–'; };
+        return PPC.row('Last page: finger up → tap seen', ms(t.navUp, t.navClick)) + PPC.row('Tap → slide starts', ms(t.navClick, t.frame)) + PPC.row('Slide length', ms(t.frame, t.done)); })() + PPC.row('Opened', ((performance.now() / 1000) | 0) + 's ago') +
       PPC.row('Version', PP_CONFIG.version) + '</div>' });
   });
 
@@ -603,6 +607,13 @@ var PPApp = (function () {
       }, 290);
     });
   })();
+
+  // Timing of the last tap, shown on the hidden "Screen check" page, so a slow
+  // page change on a real phone can be measured
+  var T = window.PPNavTiming = {};
+  document.addEventListener('touchstart', function () { T.down = performance.now(); }, true);
+  document.addEventListener('touchend', function () { T.up = performance.now(); }, true);
+  document.addEventListener('click', function () { T.click = performance.now(); }, true);
 
   var navIntent = 0;
   function markIntent() { navIntent = Date.now(); }

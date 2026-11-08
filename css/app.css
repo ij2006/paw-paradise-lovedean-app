@@ -1066,8 +1066,4 @@ html.fit-stretch .splash { position: absolute; }
 .splash { inset: 0; height: auto; }
 
 
-/* v19: smoother page changes.
-   Screens not on show stay laid out (just invisible) instead of being removed from
-   the page, so a screen is ready to draw the moment it slides in. */
-.screens > .screen[hidden] { display: block !important; visibility: hidden; pointer-events: none; }
-.screen { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+
