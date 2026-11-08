@@ -86,10 +86,12 @@ var PPApp = (function () {
   function finishTransition() {
     if (!pending) return;
     clearTimeout(pending.timer);
+    (pending.anims || []).forEach(function (a) { try { a.cancel(); } catch (e) {} });
     document.documentElement.classList.remove('is-animating');
     screensEl.classList.remove('anim-push', 'anim-pop', 'anim-fade');
     Array.prototype.forEach.call(screensEl.children, function (s) {
       s.classList.remove('is-entering', 'is-leaving');
+      s.style.zIndex = ''; s.style.willChange = ''; s.style.boxShadow = '';
       if (!current || s !== current.el) s.hidden = true;
     });
     pending = null;
@@ -130,9 +132,8 @@ var PPApp = (function () {
 
   function titleOf(r, el) { return (el && el.dataset.title) || ROUTES[r.name].title; }
 
-  // Page slides are off: screens appear the instant you tap, like the tabs.
-  // (Set to true to bring the sliding animation back.)
-  var SLIDES = false;
+  // Page slides on (set to false for screens to appear instantly)
+  var SLIDES = true;
 
   function show(r, direction) {
     var def = ROUTES[r.name];
@@ -180,14 +181,25 @@ var PPApp = (function () {
       if (s !== el && (!motion || s !== (prev && prev.el))) s.hidden = true;
     });
     if (motion) {
+      // Slide like an iPhone app: the new screen slides over from the right while the
+      // old one drifts left (reversed for Back). Runs on the phone's graphics chip, and
+      // the screens are only tidied up once the slide has really finished, so a busy
+      // moment can never cut it short and make the page jump.
       var old = prev.el;
       old.hidden = false;
-      var cls = direction === 'push' ? 'anim-push' : direction === 'pop' ? 'anim-pop' : 'anim-fade';
-      screensEl.classList.add(cls);
-      el.classList.add('is-entering');
-      old.classList.add('is-leaving');
+      var push = direction === 'push';
+      var topEl = push ? el : old, underEl = push ? old : el;
+      topEl.style.zIndex = '2'; underEl.style.zIndex = '1';
+      el.style.willChange = old.style.willChange = 'transform';
+      topEl.style.boxShadow = '-8px 0 28px rgba(0,0,0,.10)';
+      var opts = { duration: 340, easing: 'cubic-bezier(.32,.72,0,1)' };
+      var off = 'translate3d(100%,0,0)', on = 'translate3d(0,0,0)', back = 'translate3d(-30%,0,0)';
+      var a1 = topEl.animate(push ? [{ transform: off }, { transform: on }] : [{ transform: on }, { transform: off }], opts);
+      var a2 = underEl.animate(push ? [{ transform: on }, { transform: back }] : [{ transform: back }, { transform: on }], opts);
       document.documentElement.classList.add('is-animating');
-      pending = { old: old, timer: setTimeout(finishTransition, 250) };
+      var mine = { old: old, anims: [a1, a2], timer: setTimeout(finishTransition, 900) };
+      pending = mine;
+      a1.onfinish = function () { if (pending === mine) finishTransition(); };
     }
     if (def.onShow) def.onShow(el);
     onScroll();

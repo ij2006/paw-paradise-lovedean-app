@@ -1049,3 +1049,21 @@ html { touch-action: manipulation; }
 .topbar .back-btn:active, .topbar .icon-btn--right:active { background: rgba(255,255,255,.24); }
 .topbar .staff-pill { background: #F7F2E9; color: #24533A; }
 .topbar :focus-visible { outline-color: #F7F2E9; }
+
+/* Opening logo: fixed to the full screen height and no pop-in, so it stays perfectly still */
+.splash { inset: 0 0 auto 0; height: var(--screen-h, 100%); }
+.splash img { animation: none; }
+
+/* Gallery: grids inside the mosaic, with a small title above visitors' photos */
+.mosaic { display: block; }
+.mosaic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); grid-auto-flow: dense; gap: 6px; }
+.mosaic-title { margin: 22px 2px 8px; font-family: var(--font-body); font-style: normal; font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-light); }
+
+/* iOS started the app short: lay the app out as part of the page (not pinned to the
+   short window) so it can draw all the way down to the real bottom of the screen */
+html.fit-stretch, html.fit-stretch body { height: var(--screen-h); overflow: hidden; }
+html.fit-stretch .app { position: absolute; top: 0; left: 0; right: 0; bottom: auto; height: var(--screen-h); }
+html.fit-stretch .splash { position: absolute; }
+
+/* v17: the app no longer goes behind the clock, so the opening logo just fills the app */
+.splash { inset: 0; height: auto; }

@@ -70,7 +70,7 @@ var PPF = (function () {
         '<button type="button" role="tab" aria-selected="true" data-gtab="all">All</button>' +
         '<button type="button" role="tab" aria-selected="false" data-gtab="photos">Photos</button>' +
         '<button type="button" role="tab" aria-selected="false" data-gtab="videos">Videos</button>' +
-        '<button type="button" role="tab" aria-selected="false" data-gtab="visitors" id="gtab-visitors" hidden>Visitors</button>' +
+        '<button type="button" role="tab" aria-selected="false" data-gtab="visitors" id="gtab-visitors" hidden>Yours</button>' +
       '</div>' +
       '<div class="mosaic" id="mosaic"></div>';
     var mosaic = el.querySelector('#mosaic'), which = 'all';
@@ -79,13 +79,17 @@ var PPF = (function () {
       if (which === 'visitors') {
         html = visitorItems.map(function (it, i) { return tile(it, i, 'visitors'); }).join('');
       } else if (which === 'all') {
-        // Our photos and videos, then visitors' photos
-        html = GALLERY.concat(visitorItems).map(function (it, n) { return tile(it, n, 'all', n % 7 === 0 && n < GALLERY.length ? 'tile--wide' : ''); }).join('');
+        // Our photos and videos, then visitors' photos under their own small title
+        html = '<div class="mosaic-grid">' + GALLERY.map(function (it, n) { return tile(it, n, 'all', n % 7 === 0 ? 'tile--wide' : ''); }).join('') + '</div>' +
+          (visitorItems.length ? '<h2 class="mosaic-title">Your photos</h2><div class="mosaic-grid">' +
+            visitorItems.map(function (it, n) { return tile(it, GALLERY.length + n, 'all'); }).join('') + '</div>' : '');
+        mosaic.innerHTML = html;
+        return;
       } else {
         var list = which === 'photos' ? PHOTOS : which === 'videos' ? VIDEOS : GALLERY.map(function (_, i) { return i; });
         html = list.map(function (gi, n) { return tile(GALLERY[gi], gi, 'main', n % 7 === 0 ? 'tile--wide' : ''); }).join('');
       }
-      mosaic.innerHTML = html || '<p class="empty">Nothing here yet.</p>';
+      mosaic.innerHTML = html ? '<div class="mosaic-grid">' + html + '</div>' : '<p class="empty">Nothing here yet.</p>';
     }
     draw();
     el.querySelector('.gallery-tabs').addEventListener('click', function (e) {

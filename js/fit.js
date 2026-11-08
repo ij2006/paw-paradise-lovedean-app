@@ -5,16 +5,23 @@
 //  (iOS reports no notch / home bar for a while, then corrects itself).
 //  That made the top look blurry under the clock and the tab bar sit too high
 //  until the phone caught up. This file:
-//   1. nudges iOS to work the edges out again straight away,
-//   2. if iOS still reports no notch while the app fills the screen, uses the
+//   1. if iOS still reports no notch while the app fills the screen, uses the
 //      known notch height for that size of iPhone,
-//   3. keeps the app exactly the height of the screen.
+//   2. keeps the app exactly the height of the screen.
 //  It re-checks when the phone rotates, unfolds (iPhone Duo) or reopens the app.
 // ─────────────────────────────────────────────
 (function () {
   var h = document.documentElement;
   var isIPhone = /iPhone|iPod/.test(navigator.userAgent);
   var probe;
+
+  // Know the full screen height straight away (before anything draws), so the
+  // opening logo sits still in the middle instead of jumping as iOS settles.
+  (function () {
+    var portrait = (window.innerHeight || 1) >= (window.innerWidth || 0);
+    var sh = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+    if (sh) h.style.setProperty('--screen-h', sh + 'px');
+  })();
 
   function measure() {
     if (!probe) {
@@ -58,16 +65,10 @@
 
     // Only for screen sizes of known iPhones (not iPhone Duo or anything new, which report their edges properly)
     var knownWidth = [320, 375, 390, 393, 402, 414, 420, 428, 430, 440].indexOf(sw) !== -1;
+    // The app now starts below the clock (iPhone draws that strip itself), so no
+    // notch guessing or stretching is needed any more. The measurements are still
+    // kept for the hidden "Screen check" page.
     var stretch = false;
-    if (installed && isIPhone && portrait && knownWidth && Math.abs(vw - sw) < 2) {
-      // iOS sometimes says "no notch" even though the app reaches the top: use the real notch height
-      if (m.top < 1 && (vh >= sh - 1 || sh - vh <= 140)) topFb = notchFor(sh);
-      if (m.bottom < 1 && sh >= 812 && (vh >= sh - 1 || sh - vh <= 140)) bottomFb = 21;
-      // iOS sometimes makes the app shorter than the screen (by about the notch height)
-      // while still drawing it from the very top: stretch it to the full screen,
-      // so the tab bar sits at the bottom.
-      stretch = vh < sh - 1 && sh - vh <= 140;
-    }
     h.classList.toggle('fit-stretch', stretch);
     h.style.setProperty('--screen-h', sh + 'px');
     h.style.setProperty('--safe-top-fb', topFb + 'px');
@@ -77,26 +78,17 @@
     window.PPFit = { insets: m, fallbackTop: topFb, fallbackBottom: bottomFb, stretched: stretch, viewport: vw + ' × ' + vh, screen: sw + ' × ' + sh };
   }
 
-  // Asking iOS to re-read the page's viewport makes it work out the screen edges again
-  function nudge() {
-    var meta = document.querySelector('meta[name=viewport]');
-    if (!meta || !isIPhone) return;
-    var c = meta.getAttribute('content');
-    meta.setAttribute('content', c + ', maximum-scale=1');
-    setTimeout(function () { meta.setAttribute('content', c); fit(); }, 30);
-  }
-
   function refit() { fit(); setTimeout(fit, 120); setTimeout(fit, 500); }
 
   document.addEventListener('DOMContentLoaded', function () {
-    fit(); nudge();
+    fit();
     // iOS can take a moment to report the right edges after launch
     [150, 400, 900, 1600, 3000].forEach(function (t) { setTimeout(fit, t); });
   });
   window.addEventListener('load', refit);
   window.addEventListener('resize', fit);
   window.addEventListener('orientationchange', refit);
-  window.addEventListener('pageshow', function () { nudge(); refit(); });
-  document.addEventListener('visibilitychange', function () { if (!document.hidden) { nudge(); refit(); } });
+  window.addEventListener('pageshow', refit);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) refit(); });
   if (window.visualViewport) visualViewport.addEventListener('resize', fit);
 })();
