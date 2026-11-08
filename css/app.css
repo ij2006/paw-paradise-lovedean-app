@@ -995,9 +995,6 @@ html[data-fontsize="lg"] .topbar-title, html[data-fontsize="xl"] .topbar-title {
 @media (max-height: 460px) { .tabbar { height: 56px; } .tab { min-height: 44px; } .screen--fixed { bottom: calc(56px + var(--tab-gap) + 8px); } }
 
 /* Home: the golden retriever photo */
-.hero { aspect-ratio: 6 / 5; margin-top: 8px; }
-.hero img { object-position: center 40%; }
-@media (min-width: 560px) { .hero { aspect-ratio: 16 / 10; } .hero img { object-position: center 35%; } }
 
 /* Gallery: share card at the top, filter, rounded mosaic */
 .share-card {
@@ -1022,7 +1019,6 @@ html[data-fontsize="lg"] .topbar-title, html[data-fontsize="xl"] .topbar-title {
 .mosaic .tile:active { transform: scale(.97); }
 .mosaic .play { width: 28px; height: 28px; top: auto; left: auto; right: 8px; bottom: 8px; transform: none; display: grid; place-items: center; border-radius: 50%; background: rgba(0,0,0,.5); color: #fff; }
 .mosaic .empty { grid-column: 1 / -1; }
-.hero { max-height: 52vh; }
 /* iOS started the app short: stretch it to the whole screen (see fit.js) */
 html.fit-stretch, html.fit-stretch body { height: var(--screen-h); }
 html.fit-stretch .app { bottom: auto; height: var(--screen-h); }
@@ -1067,3 +1063,16 @@ html.fit-stretch .splash { position: absolute; }
 
 
 
+
+/* v23: every page has a solid background, so the page underneath never shows
+   through while one slides over another */
+.screen { background: var(--bg); }
+.screen--fixed { background: #fff; }
+
+/* Home photo back to its original size (wide), framed on the dog */
+.hero img { object-position: center 60%; }
+/* Pages only scroll up and down, so a sideways swipe is left free for moving between tabs */
+.screens > .screen { touch-action: pan-y; }
+.hero { margin-top: 12px; }
+/* Let the Book button's soft shadow show properly (it was being cut into a box) */
+.screen > .home-book { contain: none; }

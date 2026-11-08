@@ -192,22 +192,28 @@ var PPApp = (function () {
       var topEl = push ? el : old, underEl = push ? old : el;
       topEl.style.zIndex = '2'; underEl.style.zIndex = '1';
       el.style.willChange = old.style.willChange = 'transform';
-      var opts = { duration: 340, easing: 'cubic-bezier(.32,.72,0,1)' };
+      var opts = { duration: 360, easing: 'cubic-bezier(.2,.75,.3,1)', fill: 'forwards' };
       var off = 'translate3d(100%,0,0)', on = 'translate3d(0,0,0)', back = 'translate3d(-30%,0,0)';
-      var a1 = topEl.animate(push ? [{ transform: off }, { transform: on }] : [{ transform: on }, { transform: off }], opts);
-      var a2 = underEl.animate(push ? [{ transform: on }, { transform: back }] : [{ transform: back }, { transform: on }], opts);
-      // Hold on the first frame until the phone has actually drawn it, then play.
-      // Otherwise a busy first frame swallows the start of the slide and it looks like a jump.
-      a1.pause(); a2.pause();
+      // Park both screens where the slide begins and let the phone draw that first
+      // (two frames). Only then start the slide, so the phone's first draw of the new
+      // page can't eat the start of it.
+      topEl.style.transform = push ? off : on;
+      underEl.style.transform = push ? on : back;
+      var a1 = null, a2 = null;
       T.show = performance.now(); T.frame = T.done = null; T.navUp = T.up; T.navClick = T.click;
-      requestAnimationFrame(function () {
+      var startSlide = function () {
+        if (!pending || pending.old !== old || pending.started) return;
+        pending.started = true;
         T.frame = performance.now();
-        if (pending && pending.anims && pending.anims[0] === a1) { a1.play(); a2.play(); }
-      });
+        a1 = topEl.animate(push ? [{ transform: off }, { transform: on }] : [{ transform: on }, { transform: off }], opts);
+        a2 = underEl.animate(push ? [{ transform: on }, { transform: back }] : [{ transform: back }, { transform: on }], opts);
+        pending.anims = [a1, a2];
+        a1.onfinish = function () { T.done = performance.now(); if (pending === mine) finishTransition(); };
+      };
+      requestAnimationFrame(function () { requestAnimationFrame(startSlide); });
       document.documentElement.classList.add('is-animating');
-      var mine = { old: old, anims: [a1, a2], timer: setTimeout(finishTransition, 900) };
+      var mine = { old: old, anims: [], timer: setTimeout(finishTransition, 1200) };
       pending = mine;
-      a1.onfinish = function () { T.done = performance.now(); if (pending === mine) finishTransition(); };
     }
     if (!motion) { el.style.transform = ''; el.style.zIndex = ''; el.style.willChange = ''; }
     if (def.onShow) def.onShow(el);
@@ -230,10 +236,15 @@ var PPApp = (function () {
   function shortTitle(t) { return t.length > 9 ? '' : t; }
 
   function onHashChange() {
+    if (pendingTab) {
+      var pt = pendingTab; pendingTab = null;
+      history.replaceState(null, '', '#/' + pt.name);
+      navIntent = pt.quiet ? 0 : Date.now();
+    }
     var r = parse(location.hash);
     var def = ROUTES[r.name];
     var direction;
-    if (stack.length > 1 && stack[stack.length - 2] === r.key) { fwd.push(stack.pop()); direction = 'pop'; }
+    if (stack.length > 1 && stack[stack.length - 2] === r.key) { fwd.push(stack.pop()); direction = 'pop'; if (pushed > 0) pushed--; }
     else if (current && current.key === r.key) { return; }
     else if (def.depth === 0) { stack = [r.key]; fwd = []; direction = 'fade'; }
     else {
@@ -257,10 +268,29 @@ var PPApp = (function () {
   var OWN_HISTORY = false;   // off: iPhone's own swipe-back is used (it worked more reliably)
 
   // Change screen now. quiet = no slide (the screen is already in place after a swipe)
+  // History: the main tabs share one entry at the bottom, and only pages opened from
+  // them are added on top. So iPhone's swipe-back steps back out of pages you opened,
+  // and stops at the tab - from there, swiping moves between the tabs instead.
+  var pushed = 0, pendingTab = null;
   function navigate(hash, quiet) {
+    var r = parse(hash);
+    if (ROUTES[r.name] && ROUTES[r.name].depth === 0) { switchTab(r.key, quiet); return; }
     navIntent = quiet ? 0 : Date.now();
     if (location.hash === hash) return;
-    if (OWN_HISTORY) history.replaceState(null, '', hash); else history.pushState(null, '', hash);
+    if (OWN_HISTORY) history.replaceState(null, '', hash); else { history.pushState(null, '', hash); pushed++; }
+    onHashChange();
+  }
+  function switchTab(name, quiet) {
+    navIntent = quiet ? 0 : Date.now();
+    if (!OWN_HISTORY && pushed > 0) {
+      // Step back down to the tab entry first, then swap it for the new tab
+      pendingTab = { name: name, quiet: quiet };
+      var n = pushed; pushed = 0;
+      history.go(-n);
+      return;
+    }
+    if (location.hash === '#/' + name && current && current.key === name) return;
+    history.replaceState(null, '', '#/' + name);
     onHashChange();
   }
   function replaceRoute(hash) {
@@ -350,7 +380,7 @@ var PPApp = (function () {
       var tab = t.getAttribute('data-tab');
       if (current && currentTab === tab) {
         e.preventDefault();
-        if (ROUTES[current.name].depth > 0) { stack = [tab]; replaceRoute('#/' + tab); }
+        if (ROUTES[current.name].depth > 0) { switchTab(tab); }
         else current.el.scrollTo({ top: 0, behavior: document.documentElement.getAttribute('data-motion') === 'reduced' ? 'auto' : 'smooth' });
       }
       return;
@@ -412,7 +442,7 @@ var PPApp = (function () {
           var name = t.getAttribute('data-tab');
           suppressClick = Date.now();
           if (current && currentTab === name) {
-            if (ROUTES[current.name].depth > 0) { stack = [name]; replaceRoute('#/' + name); }
+            if (ROUTES[current.name].depth > 0) { switchTab(name); }
             else current.el.scrollTo({ top: 0, behavior: document.documentElement.getAttribute('data-motion') === 'reduced' ? 'auto' : 'smooth' });
           } else {
             navigate('#/' + name);
@@ -483,6 +513,7 @@ var PPApp = (function () {
     }
     screensEl.addEventListener('touchstart', function (e) {
       sx = null;
+      if (true) return;   // forward swipe replaced by swiping between tabs
       if (!fwd.length || pending || !current || PPUI.hasLayer()) return;
       var x = e.touches[0].clientX;
       if (x < screensEl.clientWidth - 24) return;
@@ -615,6 +646,84 @@ var PPApp = (function () {
   document.addEventListener('touchend', function () { T.up = performance.now(); }, true);
   document.addEventListener('click', function () { T.click = performance.now(); }, true);
 
+  // On a main tab, swipe left or right to move to the next or previous tab.
+  // Both pages follow your finger, side by side.
+  (function () {
+    var ORDER = ['home', 'book', 'gallery', 'more'];
+    var sx = null, sy = 0, dx = 0, lastX = 0, lastT = 0, vel = 0, decided = 0, w = 0, el = null, idx = 0, nb = null, nbName = null, nbSide = 0;
+    function neighbour(side) {
+      var name = ORDER[idx + side];
+      if (!name) return null;
+      if (!cache[name]) cache[name] = makeScreen({ name: name, key: name });
+      return { name: name, el: cache[name] };
+    }
+    function place(d) {
+      var side = d < 0 ? 1 : -1;
+      if (side !== nbSide) {
+        if (nb) { nb.style.transform = ''; nb.style.zIndex = ''; nb.style.willChange = ''; nb.style.transition = ''; nb.hidden = true; }
+        var n = neighbour(side);
+        nb = n ? n.el : null; nbName = n ? n.name : null; nbSide = side;
+        if (nb) { nb.hidden = false; nb.style.zIndex = '2'; nb.style.willChange = 'transform'; nb.style.transition = 'none'; }
+      }
+      if (!nb) d = d * 0.25;   // nothing that way: a little give, then springs back
+      el.style.transform = 'translate3d(' + d + 'px,0,0)';
+      if (nb) nb.style.transform = 'translate3d(' + (d + (side === 1 ? w : -w)) + 'px,0,0)';
+    }
+    function cleanup() {
+      [el, nb].forEach(function (n) { if (n) { n.style.transition = ''; n.style.transform = ''; n.style.zIndex = ''; n.style.willChange = ''; } });
+      if (nb && current && nb !== current.el) nb.hidden = true;
+      if (el && current && el !== current.el) el.hidden = true;
+      nb = null; nbSide = 0;
+    }
+    screensEl.addEventListener('touchstart', function (e) {
+      sx = null;
+      if (pending || !current || PPUI.hasLayer() || ROUTES[current.name].depth !== 0 || e.touches.length > 1) return;
+      if (e.target.closest('.photo-strip, input, textarea, select, iframe, [data-noswipe]')) return;
+      idx = ORDER.indexOf(current.key);
+      if (idx < 0) return;
+      sx = lastX = e.touches[0].clientX; sy = e.touches[0].clientY; lastT = e.timeStamp;
+      dx = 0; vel = 0; decided = 0; w = screensEl.clientWidth; el = current.el; nb = null; nbSide = 0;
+    }, { passive: true });
+    screensEl.addEventListener('touchmove', function (e) {
+      if (sx === null) return;
+      var x = e.touches[0].clientX, y = e.touches[0].clientY;
+      if (!decided) {
+        var ax = Math.abs(x - sx), ay = Math.abs(y - sy);
+        if (ay > 10 && ay >= ax) { sx = null; return; }       // scrolling up/down
+        if (ax < 10 || ax < ay * 1.3) return;
+        decided = 1; sx = x;                                  // start following from here
+        el.style.willChange = 'transform'; el.style.transition = 'none';
+      }
+      dx = x - sx;
+      var dt = Math.max(1, e.timeStamp - lastT); vel = (x - lastX) / dt; lastX = x; lastT = e.timeStamp;
+      place(dx);
+    }, { passive: true });
+    function end() {
+      if (sx === null) return;
+      sx = null;
+      if (!decided) return;
+      var go = nb && ((Math.abs(dx) > w * 0.3 && Math.sign(dx) === -nbSide) || (Math.abs(vel) > 0.4 && Math.abs(dx) > 40 && Math.sign(vel) === -nbSide));
+      var t = 'transform .3s cubic-bezier(.2,.75,.3,1)';
+      el.style.transition = t; if (nb) nb.style.transition = t;
+      if (go) {
+        el.style.transform = 'translate3d(' + (nbSide === 1 ? -w : w) + 'px,0,0)';
+        nb.style.transform = 'translate3d(0,0,0)';
+      } else {
+        el.style.transform = 'translate3d(0,0,0)';
+        if (nb) nb.style.transform = 'translate3d(' + (nbSide === 1 ? w : -w) + 'px,0,0)';
+      }
+      var name = nbName;
+      setTimeout(function () {
+        if (!go) { cleanup(); return; }
+        afterNav = cleanup;
+        setTimeout(function () { if (afterNav === cleanup) { afterNav = null; cleanup(); } }, 800);
+        switchTab(name, true);
+      }, 310);
+    }
+    screensEl.addEventListener('touchend', end);
+    screensEl.addEventListener('touchcancel', end);
+  })();
+
   var navIntent = 0;
   function markIntent() { navIntent = Date.now(); }
   document.addEventListener('click', markIntent, true);
@@ -663,7 +772,7 @@ var PPApp = (function () {
     if (def.depth === 2) stack = [def.tab, def.parent, r.key];
     if (recovery) {
       history.replaceState(null, '', '#/' + def.tab);
-      if (OWN_HISTORY) history.replaceState(null, '', '#/staff'); else history.pushState(null, '', '#/staff');
+      if (OWN_HISTORY) history.replaceState(null, '', '#/staff'); else { history.pushState(null, '', '#/staff'); pushed++; }
       stack = [def.tab, 'staff'];
     } else if (!location.hash || location.hash === '#' || location.hash === '#/') {
       history.replaceState(null, '', '#/home');
@@ -672,7 +781,7 @@ var PPApp = (function () {
       if (OWN_HISTORY) history.replaceState(null, '', location.hash);
       else {
         history.replaceState(null, '', '#/' + stack[0]);
-        for (var i = 1; i < stack.length; i++) history.pushState(null, '', '#/' + stack[i]);
+        for (var i = 1; i < stack.length; i++) { history.pushState(null, '', '#/' + stack[i]); pushed++; }
       }
     }
     show(r);
