@@ -23,6 +23,18 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600;1,700&family=Jost:wght@300;400;500;600&display=swap" />
   <link rel="stylesheet" href="css/app.css" />
   <script>
+    // The app's address is app.pawparadiselovedean.co.uk. Anyone who opens the old
+    // test address is sent there (Cloudflare's preview addresses are left alone).
+    (function () {
+      if (location.hostname !== 'paw-paradise-lovedean-app.pages.dev') return;
+      var standalone = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+      var dest = 'https://app.pawparadiselovedean.co.uk/' + location.search + location.hash;
+      if (!standalone) { location.replace(dest); return; }
+      // Already added to a home screen from the old address: explain how to move over
+      window.__ppMoved = dest;
+    })();
+  </script>
+  <script>
     // Apply saved appearance settings before anything draws, so there's no flash
     (function () {
       var h = document.documentElement, g = function (k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };

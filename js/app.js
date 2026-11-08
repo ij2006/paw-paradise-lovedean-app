@@ -803,7 +803,16 @@ var PPApp = (function () {
   }
 
   // ── Start ───────────────────────────────────
+  function showMoved() {
+    document.body.innerHTML = '<main style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;background:#F5F3EC;color:#1F2620;font-family:system-ui,sans-serif">' +
+      '<img src="images/logo.png" alt="" width="110" height="110" />' +
+      '<h1 style="font-size:1.4rem;margin:0">The app has moved</h1>' +
+      '<p style="margin:0;max-width:22rem;line-height:1.5">Please delete this app from your home screen, then add it again from <strong>app.pawparadiselovedean.co.uk</strong> in Safari.</p>' +
+      '<a href="' + window.__ppMoved + '" style="background:#24533A;color:#fff;padding:14px 22px;border-radius:14px;text-decoration:none;font-weight:600">Open the new address</a></main>';
+  }
+
   function start() {
+    if (window.__ppMoved) { showMoved(); return; }
     var installed = document.documentElement.classList.contains('is-installed');
     var forceApp = /[?&]app\b/.test(location.search);
     if (!installed && !forceApp && !PPStaff.isRecovering()) {

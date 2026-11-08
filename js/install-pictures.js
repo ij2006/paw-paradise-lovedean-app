@@ -37,7 +37,7 @@ var PPPics = (function () {
       '<circle cx="34" cy="90" r="22" fill="#fff" stroke="#D8D8DE"/><path d="M39 81l-9 9 9 9" fill="none" stroke="#1C1C1E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' +
       '<rect x="62" y="66" width="196" height="48" rx="24" fill="#fff" stroke="#D8D8DE"/>' +
       '<g stroke="#1C1C1E" stroke-width="3" stroke-linecap="round"><path d="M81 81h17M81 90h21M81 99h13"/></g>' +
-      '<text x="166" y="95" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1C1C1E">…app.pages.dev</text>' +
+      '<text x="166" y="95" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1C1C1E">…lovedean.co.uk</text>' +
       '<path d="M242 84a8 8 0 1 0 2 7" fill="none" stroke="#1C1C1E" stroke-width="2.4" stroke-linecap="round"/><path d="M239 80l4 4-4 3" fill="none" stroke="#1C1C1E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>' +
       '<circle cx="286" cy="90" r="22" fill="#fff" stroke="#D8D8DE"/><rect x="277" y="81" width="13" height="13" rx="3" fill="none" stroke="#1C1C1E" stroke-width="2.4"/><rect x="282" y="86" width="13" height="13" rx="3" fill="#fff" stroke="#1C1C1E" stroke-width="2.4"/>' +
       ring(91, 90, 18));
@@ -116,9 +116,9 @@ var PPPics = (function () {
       ringRectXY(258, 16, 42, 26) +
       '<rect x="14" y="52" width="292" height="62" rx="12" fill="#fff" stroke="#E0E0E6"/>' +
       '<defs><clipPath id="pp-icon-clip"><rect x="26" y="61" width="44" height="44" rx="10"/></clipPath></defs>' +
-      '<image href="images/icons/apple-touch-icon.png" x="26" y="61" width="44" height="44" preserveAspectRatio="xMidYMid slice" clip-path="url(#pp-icon-clip)"/>' +
+      '<image href="images/icons/pp-icon-180.png" x="26" y="61" width="44" height="44" preserveAspectRatio="xMidYMid slice" clip-path="url(#pp-icon-clip)"/>' +
       '<text x="84" y="80" font-size="14" fill="#1C1C1E">Paw Paradise</text>' +
-      '<text x="84" y="99" font-size="11" fill="#8E8E93">paw-paradise…pages.dev</text>' +
+      '<text x="84" y="99" font-size="11" fill="#8E8E93">app.pawparadiselovedean.co.uk</text>' +
       (withToggle
         ? '<rect x="14" y="122" width="292" height="38" rx="12" fill="#fff" stroke="#E0E0E6"/>' +
           '<text x="28" y="146" font-size="13.5" fill="#1C1C1E">Open as Web App</text>' +
@@ -137,7 +137,7 @@ var PPPics = (function () {
       '<rect x="14" y="44" width="292" height="60" rx="14" fill="#fff" stroke="#D8D8DE"/>' +
       '<path d="M30 74a7 7 0 1 1 14 0 7 7 0 1 1-14 0" fill="none" stroke="#5F6368" stroke-width="2"/>' +
       '<rect x="56" y="58" width="168" height="32" rx="16" fill="#F1F3F4"/>' +
-      '<text x="140" y="79" text-anchor="middle" font-size="12.5" fill="#202124">…app.pages.dev</text>' +
+      '<text x="140" y="79" text-anchor="middle" font-size="12.5" fill="#202124">…lovedean.co.uk</text>' +
       '<rect x="234" y="64" width="20" height="20" rx="4" fill="none" stroke="#5F6368" stroke-width="2"/><text x="244" y="79" text-anchor="middle" font-size="11" font-weight="700" fill="#5F6368">1</text>' +
       '<g fill="#202124"><circle cx="282" cy="66" r="2.6"/><circle cx="282" cy="74" r="2.6"/><circle cx="282" cy="82" r="2.6"/></g>' +
       ring(282, 74, 17), 120);
@@ -160,7 +160,7 @@ var PPPics = (function () {
       '<defs><clipPath id="pp-and-clip"><circle cx="64" cy="82" r="18"/></clipPath></defs>' +
       '<image href="images/icons/icon-192.png" x="46" y="64" width="36" height="36" clip-path="url(#pp-and-clip)"/>' +
       '<text x="92" y="80" font-size="14" fill="#202124">Paw Paradise</text>' +
-      '<text x="92" y="97" font-size="11" fill="#5F6368">…app.pages.dev</text>' +
+      '<text x="92" y="97" font-size="11" fill="#5F6368">…lovedean.co.uk</text>' +
       '<text x="190" y="130" text-anchor="middle" font-size="14" font-weight="600" fill="#1A73E8">Cancel</text>' +
       '<rect x="222" y="112" width="64" height="28" rx="14" fill="#1A73E8"/><text x="254" y="131" text-anchor="middle" font-size="13.5" font-weight="600" fill="#fff">Install</text>' +
       ringRectXY(216, 106, 76, 40), 160);

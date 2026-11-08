@@ -16,7 +16,7 @@ It is completely separate from the website. Nothing in this folder changes the w
 **Look:** solid, list-based design in forest green and warm off-white, with a floating tab bar you can tap or slide along. Fills the whole screen, with a green strip behind the iPhone status bar. Uses the phone's own system font. Text size has four steps (87.5%, 100%, 125%, 150%) under Accessibility.
 
 **In a browser, people only see "Get the app".** Opening the address in Safari or Chrome shows a single page: pick iPhone or Android. Android installs in one tap, and iPhone shows step-by-step Add to Home Screen instructions. The full app only runs once it's opened from the home screen. (Apple doesn't let websites install themselves, so iPhone always needs Safari's Share → Add to Home Screen.)
-- To see the full app in a browser for testing, add `?app` to the address, e.g. `https://paw-paradise-lovedean-app.pages.dev/?app`
+- To see the full app in a browser for testing, add `?app` to the address, e.g. `https://app.pawparadiselovedean.co.uk/?app`
 - Staff password-reset links still open the app's reset screen in the browser
 
 **Staff area** (More → Staff login): same login as the website. Read and delete suggestions sent from the website, approve or delete visitor photos, and write or delete news posts.
