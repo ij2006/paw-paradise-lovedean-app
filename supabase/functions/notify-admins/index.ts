@@ -15,11 +15,6 @@ webpush.setVapidDetails(
   Deno.env.get("VAPID_PRIVATE_KEY")!,
 );
 
-function clip(text: unknown, n: number) {
-  const s = String(text ?? "").trim();
-  return s.length > n ? s.slice(0, n - 1) + "…" : s;
-}
-
 Deno.serve(async (req) => {
   let payload: any;
   try { payload = await req.json(); } catch { return new Response("Bad request", { status: 400 }); }
@@ -28,19 +23,10 @@ Deno.serve(async (req) => {
 
   let msg: { title: string; body: string; url: string; tag: string } | null = null;
   if (payload.table === "suggestions") {
-    msg = {
-      title: "New suggestion",
-      body: (r.name ? clip(r.name, 40) + ": " : "") + clip(r.suggestion, 140),
-      url: "/#/staff/suggestions",
-      tag: "suggestion-" + r.id,
-    };
+    msg = { title: "New suggestion", body: "", url: "/#/staff/suggestions", tag: "suggestion-" + r.id };
   } else if (payload.table === "gallery_submissions" && !r.approved) {
-    msg = {
-      title: "New photo to approve",
-      body: (r.name ? clip(r.name, 40) : "A visitor") + (r.dog ? " and " + clip(r.dog, 30) : "") + " sent a photo for the gallery",
-      url: "/#/staff/photos",
-      tag: "photos", // several photos sent together show as one notification
-    };
+    // Several photos sent together show as one notification
+    msg = { title: "New gallery submission", body: "", url: "/#/staff/photos", tag: "photos" };
   }
   if (!msg) return new Response("ignored");
 
