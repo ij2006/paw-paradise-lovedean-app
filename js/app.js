@@ -91,7 +91,7 @@ var PPApp = (function () {
     screensEl.classList.remove('anim-push', 'anim-pop', 'anim-fade');
     Array.prototype.forEach.call(screensEl.children, function (s) {
       s.classList.remove('is-entering', 'is-leaving');
-      s.style.zIndex = ''; s.style.willChange = ''; s.style.boxShadow = '';
+      s.style.zIndex = ''; s.style.willChange = ''; s.style.boxShadow = ''; s.style.transform = '';
       if (!current || s !== current.el) s.hidden = true;
     });
     pending = null;
@@ -175,6 +175,7 @@ var PPApp = (function () {
     // Finish any slide still in progress first, so a quick second tap can never
     // leave the wrong screen showing.
     finishTransition();
+    if (warm) { if (warm === el) { clearTimeout(warmTimer); warm = null; } else unwarm(); }
     var motion = SLIDES && direction !== 'none' && direction !== 'fade' && document.documentElement.getAttribute('data-motion') !== 'reduced' && !firstRender && prev && prev.el !== el;
     el.hidden = false;
     Array.prototype.forEach.call(screensEl.children, function (s) {
@@ -195,11 +196,18 @@ var PPApp = (function () {
       var off = 'translate3d(100%,0,0)', on = 'translate3d(0,0,0)', back = 'translate3d(-30%,0,0)';
       var a1 = topEl.animate(push ? [{ transform: off }, { transform: on }] : [{ transform: on }, { transform: off }], opts);
       var a2 = underEl.animate(push ? [{ transform: on }, { transform: back }] : [{ transform: back }, { transform: on }], opts);
+      // Hold on the first frame until the phone has actually drawn it, then play.
+      // Otherwise a busy first frame swallows the start of the slide and it looks like a jump.
+      a1.pause(); a2.pause();
+      requestAnimationFrame(function () { requestAnimationFrame(function () {
+        if (pending && pending.anims && pending.anims[0] === a1) { a1.play(); a2.play(); }
+      }); });
       document.documentElement.classList.add('is-animating');
       var mine = { old: old, anims: [a1, a2], timer: setTimeout(finishTransition, 900) };
       pending = mine;
       a1.onfinish = function () { if (pending === mine) finishTransition(); };
     }
+    if (!motion) { el.style.transform = ''; el.style.zIndex = ''; el.style.willChange = ''; }
     if (def.onShow) def.onShow(el);
     onScroll();
 
@@ -496,6 +504,35 @@ var PPApp = (function () {
       }, 290);
     });
   })();
+
+  // Get the next screen ready while your finger is still on a link: it is drawn
+  // just off the right edge during the press, so the slide can start the moment
+  // you let go.
+  var warm = null, warmTimer = null;
+  function unwarm() {
+    clearTimeout(warmTimer);
+    if (!warm) return;
+    var w = warm; warm = null;
+    if (pending && (w === current.el || w === pending.old)) return;
+    w.style.transform = ''; w.style.zIndex = ''; w.style.willChange = '';
+    if (!current || w !== current.el) w.hidden = true;
+  }
+  screensEl.addEventListener('pointerdown', function (e) {
+    if (e.pointerType !== 'touch' || !SLIDES || document.documentElement.getAttribute('data-motion') === 'reduced') return;
+    var a = e.target.closest('a[href^="#/"]');
+    if (!a || a.target || pending) return;
+    var r = parse(a.getAttribute('href'));
+    var def = ROUTES[r.name];
+    if (!def || def.depth === 0 || def.nocache || (current && current.key === r.key)) return;
+    unwarm();
+    if (!cache[r.key]) cache[r.key] = makeScreen(r);
+    warm = cache[r.key];
+    warm.style.transform = 'translate3d(100%,0,0)'; warm.style.zIndex = '2'; warm.style.willChange = 'transform';
+    warm.hidden = false;
+    warmTimer = setTimeout(unwarm, 1500);
+  }, { passive: true });
+  screensEl.addEventListener('pointercancel', unwarm, { passive: true });
+  screensEl.addEventListener('scroll', function () { if (warm) unwarm(); }, { passive: true, capture: true });
 
   var navIntent = 0;
   function markIntent() { navIntent = Date.now(); }
