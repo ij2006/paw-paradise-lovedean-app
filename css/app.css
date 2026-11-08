@@ -905,8 +905,6 @@ html[data-fontsize="xl"] .back-label { max-width: 70px; }
 /* Quicker slides; pause the bar blur while a screen slides underneath (smoother on phones) */
 .anim-push .is-entering, .anim-push .is-leaving, .anim-pop .is-entering, .anim-pop .is-leaving { animation-duration: .26s !important; animation-timing-function: cubic-bezier(.22, .61, .36, 1) !important; }
 .anim-fade .is-entering { animation-duration: .15s !important; }
-.is-animating .tabbar, .is-animating .topbar.is-scrolled, .is-animating .topbar.is-fixed { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; background: var(--bar-solid); }
-.is-animating .tabbar { background: var(--glass-list); }
 
 /* Solid look (liquid glass removed) */
 .tabbar, .topbar.is-scrolled, .topbar.is-fixed, .sheet { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
@@ -947,7 +945,6 @@ html[data-fontsize="xl"] .back-label { max-width: 70px; }
 /* Snappier: faster slides, no shadows repainting while a screen slides */
 .anim-push .is-entering, .anim-push .is-leaving, .anim-pop .is-entering, .anim-pop .is-leaving { animation-duration: .24s !important; }
 .anim-push .is-entering, .anim-pop .is-leaving { box-shadow: none !important; }
-.is-animating .group, .is-animating .hero, .is-animating .btn-primary, .is-animating .tabbar { box-shadow: none !important; }
 .screen > * { contain: layout paint; }
 .tab { touch-action: none; }
 
@@ -1067,3 +1064,10 @@ html.fit-stretch .splash { position: absolute; }
 
 /* v17: the app no longer goes behind the clock, so the opening logo just fills the app */
 .splash { inset: 0; height: auto; }
+
+
+/* v19: smoother page changes.
+   Screens not on show stay laid out (just invisible) instead of being removed from
+   the page, so a screen is ready to draw the moment it slides in. */
+.screens > .screen[hidden] { display: block !important; visibility: hidden; pointer-events: none; }
+.screen { backface-visibility: hidden; -webkit-backface-visibility: hidden; }

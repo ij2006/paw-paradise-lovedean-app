@@ -191,7 +191,6 @@ var PPApp = (function () {
       var topEl = push ? el : old, underEl = push ? old : el;
       topEl.style.zIndex = '2'; underEl.style.zIndex = '1';
       el.style.willChange = old.style.willChange = 'transform';
-      topEl.style.boxShadow = '-8px 0 28px rgba(0,0,0,.10)';
       var opts = { duration: 340, easing: 'cubic-bezier(.32,.72,0,1)' };
       var off = 'translate3d(100%,0,0)', on = 'translate3d(0,0,0)', back = 'translate3d(-30%,0,0)';
       var a1 = topEl.animate(push ? [{ transform: off }, { transform: on }] : [{ transform: on }, { transform: off }], opts);
@@ -219,16 +218,18 @@ var PPApp = (function () {
     var r = parse(location.hash);
     var def = ROUTES[r.name];
     var direction;
-    if (stack.length > 1 && stack[stack.length - 2] === r.key) { stack.pop(); direction = 'pop'; }
+    if (stack.length > 1 && stack[stack.length - 2] === r.key) { fwd.push(stack.pop()); direction = 'pop'; }
     else if (current && current.key === r.key) { return; }
-    else if (def.depth === 0) { stack = [r.key]; direction = 'fade'; }
+    else if (def.depth === 0) { stack = [r.key]; fwd = []; direction = 'fade'; }
     else {
       direction = 'push';
+      if (fwd.length && fwd[fwd.length - 1] === r.key) fwd.pop(); else fwd = [];
       if (!stack.length) stack = [def.parent || def.tab];
       stack.push(r.key);
     }
     if (Date.now() - navIntent > 1200 && direction !== 'fade') direction = 'none';
     show(r, direction);
+    if (afterNav) { var f = afterNav; afterNav = null; f(); }
   }
 
   function go(name) { navigate('#/' + name); }
@@ -440,6 +441,62 @@ var PPApp = (function () {
   // (it steps back through the app's history), so the app doesn't add a second one;
   // two at once made a swipe go back two screens. When the phone does the swipe,
   // the screen is shown without a second slide on top of the phone's own.
+  // Swipe in from the right edge to go forward again (after going back),
+  // with the next screen following your finger.
+  var fwd = [], afterNav = null;
+  (function () {
+    var sx = null, sy = 0, dx = 0, lastX = 0, lastT = 0, vel = 0, el = null, nextEl = null, decided = false, w = 0, startHash = '';
+    function setX(d) {
+      nextEl.style.transform = 'translate3d(' + (w - d) + 'px,0,0)';
+      el.style.transform = 'translate3d(' + (-0.3 * d) + 'px,0,0)';
+    }
+    function cleanup() {
+      [el, nextEl].forEach(function (n) { if (n) { n.style.transition = ''; n.style.transform = ''; n.style.zIndex = ''; n.style.willChange = ''; } });
+      if (nextEl && current && nextEl !== current.el) nextEl.hidden = true;
+    }
+    screensEl.addEventListener('touchstart', function (e) {
+      sx = null;
+      if (!fwd.length || pending || !current || PPUI.hasLayer()) return;
+      var x = e.touches[0].clientX;
+      if (x < screensEl.clientWidth - 24) return;
+      sx = lastX = x; sy = e.touches[0].clientY; lastT = e.timeStamp; dx = 0; vel = 0; decided = false;
+      el = current.el; w = screensEl.clientWidth; nextEl = null; startHash = location.hash;
+    }, { passive: true });
+    screensEl.addEventListener('touchmove', function (e) {
+      if (sx === null) return;
+      var x = e.touches[0].clientX, y = e.touches[0].clientY;
+      if (!decided) {
+        if (Math.abs(y - sy) > 12 && Math.abs(y - sy) > Math.abs(x - sx)) { sx = null; return; }
+        if (sx - x < 8) return;
+        decided = true;
+        var r = parse('#/' + fwd[fwd.length - 1]);
+        if (!cache[r.key] || ROUTES[r.name].nocache) { if (cache[r.key]) cache[r.key].remove(); cache[r.key] = makeScreen(r); }
+        nextEl = cache[r.key];
+        nextEl.hidden = false; nextEl.style.zIndex = '2'; el.style.zIndex = '1';
+        nextEl.style.willChange = el.style.willChange = 'transform';
+        nextEl.style.transition = el.style.transition = 'none';
+      }
+      dx = Math.max(0, sx - x);
+      var dt = Math.max(1, e.timeStamp - lastT); vel = (lastX - x) / dt; lastX = x; lastT = e.timeStamp;
+      setX(dx);
+    }, { passive: true });
+    screensEl.addEventListener('touchend', function () {
+      if (sx === null) return;
+      sx = null;
+      if (!decided) return;
+      var go = dx > w * 0.35 || vel > 0.45;
+      nextEl.style.transition = el.style.transition = 'transform .28s cubic-bezier(.32,.72,0,1)';
+      setX(go ? w : 0);
+      setTimeout(function () {
+        if (!go) { cleanup(); return; }
+        if (location.hash !== startHash) { cleanup(); return; }   // the phone already went forward itself
+        afterNav = cleanup;
+        setTimeout(function () { if (afterNav === cleanup) { afterNav = null; cleanup(); } }, 800);
+        history.forward();
+      }, 290);
+    });
+  })();
+
   var navIntent = 0;
   function markIntent() { navIntent = Date.now(); }
   document.addEventListener('click', markIntent, true);
