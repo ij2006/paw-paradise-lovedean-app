@@ -8,10 +8,12 @@ It is completely separate from the website. Nothing in this folder changes the w
 
 | Tab | What it does |
 |---|---|
-| **Home** | The key details: opening date (after opening day: today's opening hours), 50-minute sessions, prices, opening hours, finding us, and a Book button |
+| **Home** | A simple list: opening date (after opening day: today's hours), a Book button, sessions and prices, opening hours, and finding us |
 | **Book** | The Acuity booking page, filling the screen. The ↗ button at the top opens it in the browser instead |
-| **Gallery** | Photo and video grid with a full-screen swipeable viewer, approved visitor photos, and "Send us your photos" (staff approve before anything shows) |
-| **More** | Add app to your phone, Information & FAQs, News, Contact, appearance (light/dark/auto), accessibility, Privacy Policy, Terms, Staff login |
+| **Gallery** | Photo and video grid with a full-screen swipeable viewer, approved visitor photos, and "Send us your photos" at the bottom |
+| **More** | Add app to your phone, Information & FAQs (pick a subject), News, Contact, App settings (appearance, liquid glass on/off, accessibility), Privacy Policy, Terms, Staff login |
+
+**Look:** "liquid glass": a frosted, see-through tab bar, top bar, lists and pop-ups over a soft blurred photo of the field. People can switch it off under More → App settings. Uses the phone's own system font. Text size has four steps (87.5%, 100%, 125%, 150%) under Accessibility.
 
 **In a browser, people only see "Get the app".** Opening the address in Safari or Chrome shows a single page: pick iPhone or Android. Android installs in one tap, and iPhone shows step-by-step Add to Home Screen instructions. The full app only runs once it's opened from the home screen. (Apple doesn't let websites install themselves, so iPhone always needs Safari's Share → Add to Home Screen.)
 - To see the full app in a browser for testing, add `?app` to the address, e.g. `https://paw-paradise-lovedean-app.pages.dev/?app`
@@ -35,9 +37,10 @@ sw.js                  Saves the app on the phone so it opens instantly and work
 _headers               Cloudflare settings
 css/app.css            All styles (same colours and fonts as the website)
 js/config.js           Supabase, Acuity links, email, phone, socials, opening date
-js/content.js          The words on each screen. Edit text here
+js/content.js          The words on each screen, FAQs and icons. Edit text here
 js/legal.js            Privacy Policy and Terms text
 js/features.js         Gallery list, photo sharing, news, add-to-phone, pop-ups
+js/install-pictures.js Drawings for the iPhone Add to Home Screen steps
 js/staff.js            Staff login and staff tools
 js/ui.js               Pop-ups, photo viewer, pull-to-refresh
 js/app.js              Tabs, screens, Book tab, back button, swipe-back

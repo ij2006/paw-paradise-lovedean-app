@@ -16,8 +16,9 @@ var PPApp = (function () {
     home:    { title: 'Paw Paradise', tab: 'home', depth: 0, render: function (el) { el.innerHTML = PPC.home(); updateToday(el); } },
     book:    { title: 'Book', tab: 'book', depth: 0, fixed: true, render: renderBook, onShow: loadBooking },
     gallery: { title: 'Gallery', tab: 'gallery', depth: 0, render: function (el) { PPF.gallery(el); } },
-    more:    { title: 'More', tab: 'more', depth: 0, render: function (el) { el.innerHTML = PPC.more(); syncThemeButtons(); PPStaff.syncIndicators(); } },
-    info:    { title: 'Information & FAQs', tab: 'more', depth: 1, render: function (el) { el.innerHTML = PPC.info(); } },
+    more:    { title: 'More', tab: 'more', depth: 0, render: function (el) { el.innerHTML = PPC.more(); syncThemeButtons(); syncGlass(); PPStaff.syncIndicators(); } },
+    info:    { title: 'FAQs', tab: 'more', depth: 1, render: function (el) { el.innerHTML = PPC.info(); } },
+    faq:     { title: 'FAQs', tab: 'more', depth: 2, parent: 'info', render: function (el, slug, setTitle) { el.innerHTML = PPC.faqSubject(slug); setTitle(PPC.faqTitle(slug)); } },
     news:    { title: 'News', tab: 'more', depth: 1, render: function (el) { PPF.news(el); } },
     post:    { title: 'News', tab: 'more', depth: 2, parent: 'news', nocache: true, render: function (el, param, setTitle) { PPF.newsPost(el, param, setTitle); } },
     contact: { title: 'Contact', tab: 'more', depth: 1, render: function (el) { el.innerHTML = PPC.contact(); } },
@@ -30,7 +31,7 @@ var PPApp = (function () {
       '<h1 class="sr-only">Book a session</h1>' +
       '<div class="booking-loading" id="booking-loading"><span class="spinner" aria-hidden="true"></span><p>Loading booking…</p>' +
         '<p id="booking-slow" hidden>Taking a while? <a href="' + PP_CONFIG.acuity.all + '" target="_blank" rel="noopener">Open booking in your browser</a></p></div>' +
-      '<div class="booking-offline" id="booking-offline" hidden><p class="booking-offline-icon" aria-hidden="true">📶</p><p><strong>You\'re offline</strong></p><p>Connect to the internet to book a session.</p><button type="button" class="btn btn-primary" id="booking-retry">Try again</button></div>';
+      '<div class="booking-offline" id="booking-offline" hidden><p><strong>You\'re offline</strong></p><p>Connect to the internet to book a session.</p><button type="button" class="btn btn-primary" id="booking-retry">Try again</button></div>';
     el.querySelector('#booking-retry').addEventListener('click', function () { loadBooking(el, true); });
   }
   function loadBooking(el, retry) {
@@ -73,6 +74,7 @@ var PPApp = (function () {
     if (!h || h === 'install' || /access_token|type=recovery|error_description/.test(h)) return { name: 'home', key: 'home' };
     var parts = h.split('/');
     if (parts[0] === 'news' && parts[1]) return { name: 'post', key: 'news/' + parts[1], param: decodeURIComponent(parts[1]) };
+    if (parts[0] === 'faq' && parts[1]) return { name: 'faq', key: 'faq/' + parts[1], param: decodeURIComponent(parts[1]) };
     if (ROUTES[parts[0]]) return { name: parts[0], key: parts[0] };
     return { name: 'home', key: 'home' };
   }
@@ -231,6 +233,16 @@ var PPApp = (function () {
       b.setAttribute('aria-checked', b.getAttribute('data-theme-set') === choice ? 'true' : 'false');
     });
   }
+  function syncGlass() {
+    var on = document.documentElement.getAttribute('data-glass') !== 'off';
+    Array.prototype.forEach.call(document.querySelectorAll('[data-glass-toggle]'), function (b) { b.setAttribute('aria-checked', on ? 'true' : 'false'); });
+  }
+  function toggleGlass() {
+    var on = document.documentElement.getAttribute('data-glass') !== 'off';
+    document.documentElement.setAttribute('data-glass', on ? 'off' : 'on');
+    try { localStorage.setItem('pp-glass', on ? 'off' : 'on'); } catch (e) {}
+    syncGlass();
+  }
   function syncThemeColour() {
     var bg = getComputedStyle(document.documentElement).getPropertyValue('--bar-solid').trim();
     var meta = document.querySelector('meta[name="theme-color"]');
@@ -246,16 +258,17 @@ var PPApp = (function () {
     Array.prototype.forEach.call(root.querySelectorAll('[data-opening]'), function (n) { if (opened && !stillOpeningDay) n.remove(); });
     Array.prototype.forEach.call(root.querySelectorAll('[data-after-opening]'), function (n) { if (!opened) n.remove(); });
     // On opening day itself show "Today" hours, not the countdown
-    if (opened && stillOpeningDay) Array.prototype.forEach.call(root.querySelectorAll('.status-card [data-opening]'), function (n) { n.remove(); });
+    if (opened && stillOpeningDay) Array.prototype.forEach.call(root.querySelectorAll('.home-status [data-opening]'), function (n) { n.remove(); });
   }
 
   // ── Taps anywhere ───────────────────────────
   document.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-book], [data-sheet], [data-theme-set], .tab, a[href^="#/"]');
+    var t = e.target.closest('[data-book], [data-sheet], [data-theme-set], [data-glass-toggle], .tab, a[href^="#/"]');
     if (!t) return;
     if (t.hasAttribute('data-book')) { e.preventDefault(); go('book'); return; }
     if (t.hasAttribute('data-sheet')) { e.preventDefault(); PPF.openSheet(t.getAttribute('data-sheet')); return; }
     if (t.hasAttribute('data-theme-set')) { applyTheme(t.getAttribute('data-theme-set')); return; }
+    if (t.hasAttribute('data-glass-toggle')) { toggleGlass(); return; }
     if (t.classList.contains('tab')) {
       var tab = t.getAttribute('data-tab');
       if (current && currentTab === tab) {

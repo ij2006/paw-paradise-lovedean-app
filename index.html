@@ -15,7 +15,7 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/png" sizes="32x32" href="images/icons/icon-32.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="images/icons/icon-192.png" />
-  <link rel="apple-touch-icon" href="images/icons/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="images/icons/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600;1,700&family=Jost:wght@300;400;500;600&display=swap" />
@@ -30,6 +30,7 @@
       h.setAttribute('data-fontsize', g('pp-fontsize', 'md'));
       h.setAttribute('data-contrast', g('pp-contrast', 'off'));
       h.setAttribute('data-dyslexia', g('pp-dyslexia', 'off'));
+      h.setAttribute('data-glass', g('pp-glass', 'on'));
       h.setAttribute('data-motion', g('pp-motion', (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) ? 'reduced' : 'on'));
       if (window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)) h.classList.add('is-installed');
     })();

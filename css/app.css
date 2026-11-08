@@ -36,7 +36,7 @@
   --radius: 14px;
   --radius-sm: 10px;
   --font-heading: 'Cormorant Garamond', Georgia, serif;
-  --font-body: 'Jost', system-ui, -apple-system, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', Roboto, sans-serif;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --bar-h: 52px;
@@ -121,8 +121,9 @@
   --hairline: #BBB; --hairline-strong: #FFF; --text-faint: #DDD;
 }
 
-html[data-fontsize="sm"] { font-size: 88%; }
-html[data-fontsize="lg"] { font-size: 122%; }
+html[data-fontsize="sm"] { font-size: 87.5%; }
+html[data-fontsize="lg"] { font-size: 125%; }
+html[data-fontsize="xl"] { font-size: 150%; }
 html[data-dyslexia="on"] { --font-heading: 'Atkinson Hyperlegible', Arial, sans-serif; --font-body: 'Atkinson Hyperlegible', Arial, sans-serif; }
 [data-dyslexia="on"] body { letter-spacing: .02em; word-spacing: .08em; }
 [data-dyslexia="on"] p, [data-dyslexia="on"] li { line-height: 1.85; }
@@ -168,7 +169,7 @@ strong { color: var(--text); font-weight: 600; }
 /* ── App frame ───────────────────────────────── */
 .app {
   position: fixed; inset: 0; display: flex; flex-direction: column;
-  max-width: 600px; margin: 0 auto; background: var(--bg);
+  max-width: 600px; margin: 0 auto; background: var(--bg); overflow: hidden;
 }
 @media (min-width: 640px) {
   body { background: var(--bg-2); }
@@ -634,3 +635,147 @@ h2, h3 { font-family: var(--font-body); font-style: normal; }
 .pic-pulse { transform-box: fill-box; transform-origin: center; animation: picPulse 1.6s ease-out infinite; }
 @keyframes picPulse { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(1.5); opacity: 0; } }
 [data-motion="reduced"] .pic-pulse { display: none; }
+
+
+/* =============================================
+   LIQUID GLASS
+   Frosted, see-through surfaces over a soft blurred photo of the field.
+   Switch off in More > App settings (data-glass="off" gives solid surfaces).
+   ============================================= */
+:root {
+  --glass: rgba(255, 253, 249, .62);
+  --glass-strong: rgba(255, 253, 249, .8);
+  --glass-edge: rgba(255, 255, 255, .75);
+  --glass-shadow: 0 8px 30px rgba(40, 52, 30, .10), inset 0 1px 0 rgba(255,255,255,.7);
+  --glass-blur: blur(22px) saturate(170%);
+  --tint-green-solid: #3A7A4C; --tint-amber-solid: #C27A2C; --tint-red-solid: #D2483A; --tint-grey-solid: #8E8E93; --tint-blue-solid: #3478F6;
+}
+[data-theme="dark"] {
+  --glass: rgba(22, 40, 30, .58);
+  --glass-strong: rgba(20, 36, 27, .82);
+  --glass-edge: rgba(255, 255, 255, .14);
+  --glass-shadow: 0 8px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08);
+}
+[data-contrast="on"], [data-glass="off"] {
+  --glass: var(--card); --glass-strong: var(--card); --glass-blur: none;
+  --glass-shadow: 0 0 0 1px var(--hairline);
+}
+[data-glass="off"] { --glass-edge: var(--hairline); }
+[data-contrast="on"] { --glass-edge: var(--hairline-strong); }
+
+/* Background: blurred field photo under everything */
+.app { background: var(--bg); isolation: isolate; }
+.app::before {
+  content: ''; position: absolute; inset: -60px; z-index: -1; pointer-events: none;
+  background: url(../images/gallery/thumbs/aerial-view.jpg) center 30% / cover no-repeat;
+  filter: blur(46px) saturate(1.3); opacity: .55;
+}
+.app::after {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, rgba(247,242,233,.35) 0%, rgba(247,242,233,.75) 45%, rgba(247,242,233,.9) 100%);
+}
+[data-theme="dark"] .app::before { opacity: .45; filter: blur(46px) saturate(1.1) brightness(.7); }
+[data-theme="dark"] .app::after { background: linear-gradient(180deg, rgba(15,31,23,.35), rgba(15,31,23,.8) 50%, rgba(15,31,23,.92)); }
+[data-glass="off"] .app::before, [data-glass="off"] .app::after, [data-contrast="on"] .app::before, [data-contrast="on"] .app::after { display: none; }
+.screen { background: transparent; padding-bottom: calc(108px + var(--safe-bottom)); }
+.screen--fixed { background: #fff; padding-bottom: 0; bottom: calc(86px + var(--safe-bottom)); }
+
+/* Lists */
+.group {
+  background: var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow); border-radius: 22px;
+}
+.group + .group { margin-top: 20px; }
+.cell { min-height: 54px; }
+.cell + .cell::before, .faq + .faq::before { background: var(--hairline); }
+.cell:has(.cell-icon) + .cell::before { left: 60px; }
+.cell-icon { width: 30px; height: 30px; border-radius: 9px; color: #fff; }
+.cell-icon--green { background: var(--tint-green-solid); }
+.cell-icon--amber { background: var(--tint-amber-solid); }
+.cell-icon--red   { background: var(--tint-red-solid); }
+.cell-icon--grey  { background: var(--tint-grey-solid); }
+.cell-icon--blue  { background: var(--tint-blue-solid); }
+.cell-icon--li { background: #0A66C2; }
+.li-mark { font-weight: 700; font-size: 15px; letter-spacing: -.02em; font-family: Arial, sans-serif; }
+.cell-value { font-weight: 500; color: var(--text); }
+.cell--static .cell-value { color: var(--text-mid); }
+.cell .switch { margin-left: auto; }
+.group-title { margin: 26px 34px 8px; }
+
+/* Home: a simple list */
+.home-head { display: flex; align-items: center; gap: 12px; margin: 6px 20px 16px; }
+.home-head img { width: 48px; height: 48px; border-radius: 50%; flex: none; box-shadow: 0 2px 10px rgba(0,0,0,.15); }
+.home-head .large-title { margin: 0; font-family: var(--font-body); font-style: normal; color: var(--text); }
+.home-status .cell-value { font-weight: 600; color: var(--forest); }
+.home-book { margin: 14px 16px 0; }
+.home-book .btn-block { margin: 0; }
+
+/* Buttons: tinted glass */
+.btn { border-radius: 16px; }
+.btn-primary {
+  background: rgba(28, 61, 40, .9); color: #F7F2E9;
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: 0 6px 20px rgba(28,61,40,.25), inset 0 1px 0 rgba(255,255,255,.18);
+}
+[data-theme="dark"] .btn-primary { background: rgba(232, 176, 110, .92); color: #1A120A; box-shadow: 0 6px 20px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.35); }
+[data-contrast="on"] .btn-primary { background: #003D14; color: #fff; box-shadow: none; }
+[data-theme="dark"][data-contrast="on"] .btn-primary { background: #FFC870; color: #000; }
+.btn-secondary { background: var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border-color: var(--glass-edge); color: var(--link); }
+
+/* Top bar: clear until you scroll, then frosted */
+.topbar { background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; border-bottom: 0; transition: background .2s; }
+.topbar.is-scrolled, .topbar.is-fixed { background: var(--glass-strong); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); box-shadow: 0 1px 0 var(--hairline); }
+.back-btn {
+  background: var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge); border-radius: 22px; min-height: 40px; padding: 0 12px 0 4px; box-shadow: var(--glass-shadow);
+}
+.icon-btn--right { width: 40px; height: 40px; min-height: 40px; border-radius: 50%; background: var(--glass); border: 1px solid var(--glass-edge); }
+
+/* Floating glass tab bar */
+.tabbar {
+  position: absolute; left: 14px; right: 14px; bottom: calc(10px + var(--safe-bottom));
+  min-height: 0; height: 66px; padding: 5px; border-radius: 33px;
+  background: var(--glass-strong); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge); box-shadow: 0 10px 34px rgba(30, 40, 25, .18), inset 0 1px 0 rgba(255,255,255,.6);
+}
+[data-theme="dark"] .tabbar { box-shadow: 0 10px 34px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08); }
+.tab { border-radius: 28px; min-height: 54px; gap: 1px; }
+.tab.is-active { background: rgba(28, 61, 40, .1); }
+[data-theme="dark"] .tab.is-active { background: rgba(232, 176, 110, .16); }
+[data-contrast="on"] .tab.is-active { background: transparent; text-decoration: underline; text-underline-offset: 3px; }
+.toast { bottom: calc(92px + var(--safe-bottom)); border-radius: 18px; }
+
+/* Sheets */
+.sheet { background: var(--glass-strong); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-edge); border-bottom: 0; border-radius: 28px 28px 0 0; }
+[data-glass="off"] .sheet, [data-contrast="on"] .sheet { background: var(--card); }
+.sheet-head { border-bottom-color: var(--hairline); }
+.sheet-title { font-family: var(--font-body); font-style: normal; font-weight: 700; font-size: 1.3rem; color: var(--text); }
+.sheet-x { background: var(--glass); border: 1px solid var(--glass-edge); }
+
+/* Segmented control */
+.segmented { background: rgba(120, 120, 128, .14); border: 0; border-radius: 12px; }
+.segmented button[aria-checked="true"], .segmented button[aria-selected="true"] { border-radius: 9px; }
+
+/* Gallery */
+.tiles { border-radius: 0; }
+.gallery-foot { margin-top: 18px; }
+
+/* Platform buttons on Add-to-phone */
+.platform-btn { background: var(--glass); border-color: var(--glass-edge); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
+.platform-btn svg { color: var(--forest); }
+.landing { background: transparent; }
+.on-landing body { background: linear-gradient(180deg, #E7EDE3, var(--bg) 40%); }
+[data-theme="dark"].on-landing body { background: linear-gradient(180deg, #1F3A2A, var(--bg) 40%); }
+.landing-card { background: var(--glass-strong); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--glass-edge); border-radius: 26px; }
+.photo-pick svg { color: var(--forest); }
+
+/* Big text sizes: let rows wrap instead of squashing */
+html[data-fontsize="xl"] .cell, html[data-fontsize="lg"] .cell { flex-wrap: wrap; }
+html[data-fontsize="xl"] .cell-value, html[data-fontsize="lg"] .cell-value { margin-left: auto; }
+html[data-fontsize="xl"] .tab span { font-size: .62rem; }
+html[data-fontsize="xl"] .large-title { font-size: 1.8rem; }
+
+.cell-sub { overflow-wrap: anywhere; }
+.home-status .cell-title { font-weight: 600; }
+#today-hours { color: var(--forest); }
+html[data-fontsize="xl"] .back-label { max-width: 70px; }

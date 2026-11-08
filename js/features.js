@@ -62,12 +62,12 @@ var PPF = (function () {
   var visitorItems = [];
   function gallery(el) {
     el.innerHTML = PPC.galleryHead +
-      PPC.group('', [PPC.cell({ attrs: 'data-sheet="share-photos"', icon: PPC.icon('📷', 'green'), title: 'Send us your photos', sub: 'Up to 3 from your visit' })]) +
       '<div class="tiles">' + GALLERY.map(function (it, i) { return tile(it, i, 'main'); }).join('') + '</div>' +
       '<section id="visitor-section" hidden>' +
         '<h2 class="group-title">From our visitors</h2>' +
         '<div class="tiles" id="visitor-tiles"></div>' +
-      '</section>';
+      '</section>' +
+      '<div class="gallery-foot">' + PPC.galleryFoot() + '</div>';
     el.addEventListener('click', function (e) {
       var t = e.target.closest('[data-view]');
       if (!t) return;
@@ -134,7 +134,7 @@ var PPF = (function () {
         '<p>Send us up to 3 photos from your visit. We check every photo before it goes on the website.</p>' +
         '<form class="form" id="gs-form" novalidate>' +
           '<div class="field"><span class="label" id="gs-files-label">Your photos (up to 3)</span>' +
-            '<label class="photo-pick" for="gs-files"><span aria-hidden="true">📷</span> Choose photos</label>' +
+            '<label class="photo-pick" for="gs-files"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/></svg> Choose photos</label>' +
             '<input type="file" id="gs-files" accept="image/*" multiple class="visually-hidden-input" aria-labelledby="gs-files-label" />' +
             '<p class="field-hint" id="gs-count" aria-live="polite"></p>' +
             '<div class="gs-preview" id="gs-preview"></div></div>' +
@@ -225,7 +225,7 @@ var PPF = (function () {
   }
   function news(el) {
     el.innerHTML = PPC.newsHead +
-      '<div class="group" id="news-write-group" hidden>' + PPC.cell({ attrs: 'id="news-write"', icon: PPC.icon('✏️', 'gold'), title: 'Write a post' }) + '</div>' +
+      '<div class="group" id="news-write-group" hidden>' + PPC.cell({ attrs: 'id="news-write"', icon: PPC.icon('news', 'amber'), title: 'Write a post' }) + '</div>' +
       '<div id="news-list"></div>';
     el.querySelector('#news-write').addEventListener('click', function () { composeSheet(function () { loadNews(el); }); });
     loadNews(el);
@@ -357,9 +357,10 @@ var PPF = (function () {
       html:
         '<div class="setting"><span id="a11y-size">Text size</span>' +
           '<div class="segmented" role="radiogroup" aria-labelledby="a11y-size">' +
-            '<button type="button" role="radio" data-size="sm" aria-label="Small text"><span style="font-size:13px">A</span></button>' +
-            '<button type="button" role="radio" data-size="md" aria-label="Default text"><span style="font-size:16px">A</span></button>' +
-            '<button type="button" role="radio" data-size="lg" aria-label="Large text"><span style="font-size:20px">A</span></button>' +
+            '<button type="button" role="radio" data-size="sm" aria-label="Small text"><span style="font-size:12px">A</span></button>' +
+            '<button type="button" role="radio" data-size="md" aria-label="Default text"><span style="font-size:15px">A</span></button>' +
+            '<button type="button" role="radio" data-size="lg" aria-label="Large text"><span style="font-size:19px">A</span></button>' +
+            '<button type="button" role="radio" data-size="xl" aria-label="Extra large text"><span style="font-size:23px">A</span></button>' +
           '</div></div>' +
         toggle('contrast', 'High contrast') +
         toggle('dyslexia', 'Dyslexia-friendly font') +
@@ -411,16 +412,16 @@ var PPF = (function () {
       if (focus !== false) { var f = body.querySelector('button, a'); if (f) f.focus({ preventScroll: true }); }
     }
     function done() {
-      show('<div class="install-done"><p class="install-done-tick" aria-hidden="true">✓</p><p><strong>Added to your phone</strong></p><p>Open <strong>Paw Paradise</strong> from your home screen.</p></div>');
+      show('<div class="install-done"><p class="install-done-tick" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></p><p><strong>Added to your phone</strong></p><p>Open <strong>Paw Paradise</strong> from your home screen.</p></div>');
       if (opts.onInstalled) opts.onInstalled();
     }
 
     function pick(focus) {
-      if (isInstalled()) { show('<p class="center">You\'re already using the app. 🎉</p>', focus); return; }
+      if (isInstalled()) { show('<p class="center">You\'re already using the app.</p>', focus); return; }
       show('<p class="install-q">Which phone do you have?</p>' +
         '<div class="platform-pick">' +
-          '<button type="button" class="platform-btn' + (ios ? ' is-likely' : '') + '" data-platform="ios"><span aria-hidden="true">📱</span>iPhone<small>Add to Home Screen</small></button>' +
-          '<button type="button" class="platform-btn' + (android ? ' is-likely' : '') + '" data-platform="android"><span aria-hidden="true">🤖</span>Android<small>Install in one tap</small></button>' +
+          '<button type="button" class="platform-btn' + (ios ? ' is-likely' : '') + '" data-platform="ios"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.8"/><path d="M10.5 5h3"/></svg>iPhone<small>Add to Home Screen</small></button>' +
+          '<button type="button" class="platform-btn' + (android ? ' is-likely' : '') + '" data-platform="android"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.8"/><path d="M10.5 5h3"/></svg>Android<small>Install in one tap</small></button>' +
         '</div>', focus);
     }
 
@@ -441,12 +442,12 @@ var PPF = (function () {
         return '<li class="pic-step"><span class="step-n">' + n + '</span><div><p>' + text + '</p>' + pic + '</div></li>';
       }
       var steps = newSafari
-        ? step(1, 'Tap the <strong>•••</strong> button next to the address bar, at the bottom of the screen.', PPPics.moreButton()) +
-          step(2, 'Tap <strong>Share</strong>.', PPPics.menuShare()) +
-          step(3, 'Scroll down and tap <strong>Add to Home Screen</strong>.', PPPics.shareSheet()) +
+        ? step(1, 'Tap the <strong>menu button</strong> at the left of the address bar, at the bottom of the screen.', PPPics.moreButton()) +
+          step(2, 'Tap <strong>Share</strong> at the top of the menu.', PPPics.menuShare()) +
+          step(3, 'Scroll down and tap <strong>Add to Home Screen</strong>. If you can\'t see it, tap <strong>View More</strong> first.', PPPics.shareSheet(true)) +
           step(4, 'Leave <strong>Open as Web App</strong> on, then tap <strong>Add</strong>.', PPPics.addDialog(true))
         : step(1, 'Tap the <strong>Share</strong> button at the bottom of the screen.', PPPics.oldToolbar()) +
-          step(2, 'Scroll down and tap <strong>Add to Home Screen</strong>.', PPPics.shareSheet()) +
+          step(2, 'Scroll down and tap <strong>Add to Home Screen</strong>.', PPPics.shareSheet(false)) +
           step(3, 'Tap <strong>Add</strong>.', PPPics.addDialog(false));
       show('<p class="install-note">Make sure you\'re in <strong>Safari</strong>, then:</p>' +
         '<ol class="install-steps">' + steps + '</ol>' +
