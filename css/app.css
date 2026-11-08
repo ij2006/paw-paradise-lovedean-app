@@ -943,3 +943,10 @@ html[data-fontsize="xl"] .back-label { max-width: 70px; }
 .platform-btn[data-platform], [data-theme="dark"] .platform-btn[data-platform] { background: var(--card); color: var(--text); border: 1.5px solid var(--hairline-strong); }
 .platform-btn[data-platform] small, [data-theme="dark"] .platform-btn[data-platform] small { color: var(--text-light); }
 .platform-btn.is-likely { box-shadow: none; border-color: var(--forest); }
+
+/* Snappier: faster slides, no shadows repainting while a screen slides */
+.anim-push .is-entering, .anim-push .is-leaving, .anim-pop .is-entering, .anim-pop .is-leaving { animation-duration: .24s !important; }
+.anim-push .is-entering, .anim-pop .is-leaving { box-shadow: none !important; }
+.is-animating .group, .is-animating .hero, .is-animating .btn-primary, .is-animating .tabbar { box-shadow: none !important; }
+.screen > * { contain: layout paint; }
+.tab { touch-action: none; }

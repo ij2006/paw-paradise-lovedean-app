@@ -172,7 +172,8 @@ var PPApp = (function () {
     // Finish any slide still in progress first, so a quick second tap can never
     // leave the wrong screen showing.
     finishTransition();
-    var motion = document.documentElement.getAttribute('data-motion') !== 'reduced' && !firstRender && prev && prev.el !== el;
+    var motion = !swipeDone && direction !== 'fade' && document.documentElement.getAttribute('data-motion') !== 'reduced' && !firstRender && prev && prev.el !== el;
+    swipeDone = false;
     el.hidden = false;
     Array.prototype.forEach.call(screensEl.children, function (s) {
       if (s !== el && (!motion || s !== (prev && prev.el))) s.hidden = true;
@@ -185,7 +186,7 @@ var PPApp = (function () {
       el.classList.add('is-entering');
       old.classList.add('is-leaving');
       document.documentElement.classList.add('is-animating');
-      pending = { old: old, timer: setTimeout(finishTransition, direction === 'fade' ? 170 : 270) };
+      pending = { old: old, timer: setTimeout(finishTransition, 250) };
     }
     if (def.onShow) def.onShow(el);
     onScroll();
@@ -331,6 +332,20 @@ var PPApp = (function () {
     tabbar.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       startX = e.clientX; dragging = false; hoverIndex = -1;
+      // Like the iPhone's own tab bars: switch the moment a finger touches a tab
+      if (e.pointerType === 'touch') {
+        var t = e.target.closest('.tab');
+        if (t) {
+          var name = t.getAttribute('data-tab');
+          suppressClick = Date.now();
+          if (current && currentTab === name) {
+            if (ROUTES[current.name].depth > 0) { stack = [name]; location.replace('#/' + name); }
+            else current.el.scrollTo({ top: 0, behavior: document.documentElement.getAttribute('data-motion') === 'reduced' ? 'auto' : 'smooth' });
+          } else {
+            location.hash = '#/' + name;
+          }
+        }
+      }
     });
     tabbar.addEventListener('pointermove', function (e) {
       if (startX === null) return;
@@ -372,29 +387,68 @@ var PPApp = (function () {
       Array.prototype.forEach.call(tabs, function (t, k) { t.classList.remove('is-hover'); if (t.classList.contains('is-active')) placeLens(k); });
     });
     // A slide shouldn't also count as a tap
-    tabbar.addEventListener('click', function (e) { if (Date.now() - suppressClick < 400) { e.preventDefault(); e.stopPropagation(); } }, true);
+    tabbar.addEventListener('click', function (e) { if (Date.now() - suppressClick < 1500) { e.preventDefault(); e.stopPropagation(); } }, true);
     window.addEventListener('resize', function () { Array.prototype.forEach.call(tabs, function (t, k) { if (t.classList.contains('is-active')) placeLens(k); }); });
   })();
 
-  // Swipe from the left edge to go back
+  // Swipe from the left edge to go back (like iPhone apps): the previous screen
+  // shows underneath and follows your finger; a flick or a long-enough drag goes back.
+  var swipeDone = false;
   (function () {
-    var sx = null, sy = 0, dx = 0, el = null;
+    var sx = null, sy = 0, dx = 0, lastX = 0, lastT = 0, vel = 0, el = null, prevEl = null, decided = false, w = 0;
+    function prevScreen() {
+      var prevKey = stack[stack.length - 2];
+      var r = prevKey ? parse('#/' + prevKey) : parse('#/' + (ROUTES[current.name].parent || ROUTES[current.name].tab));
+      if (!cache[r.key] || ROUTES[r.name].nocache) { if (cache[r.key]) cache[r.key].remove(); cache[r.key] = makeScreen(r); }
+      return cache[r.key];
+    }
+    function setX(x) {
+      el.style.transform = 'translateX(' + x + 'px)';
+      if (prevEl) prevEl.style.transform = 'translateX(' + (-0.28 * w + 0.28 * x) + 'px)';
+    }
+    function cleanup() {
+      [el, prevEl].forEach(function (n) { if (n) { n.style.transition = ''; n.style.transform = ''; n.style.zIndex = ''; n.style.boxShadow = ''; } });
+    }
     screensEl.addEventListener('touchstart', function (e) {
-      if (!document.documentElement.classList.contains('is-installed') || !current || ROUTES[current.name].depth === 0 || e.touches[0].clientX > 24) { sx = null; return; }
-      sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; el = current.el;
+      sx = null;
+      if (!document.documentElement.classList.contains('is-installed') || pending || !current || ROUTES[current.name].depth === 0 || e.touches[0].clientX > 28) return;
+      sx = lastX = e.touches[0].clientX; sy = e.touches[0].clientY; lastT = e.timeStamp; dx = 0; vel = 0; decided = false;
+      el = current.el; w = screensEl.clientWidth; prevEl = null;
     }, { passive: true });
     screensEl.addEventListener('touchmove', function (e) {
       if (sx === null) return;
-      dx = e.touches[0].clientX - sx;
-      if (Math.abs(e.touches[0].clientY - sy) > 40 && dx < 30) { sx = null; el.style.transform = ''; return; }
-      if (dx > 0) { el.style.transition = 'none'; el.style.transform = 'translateX(' + dx + 'px)'; }
+      var x = e.touches[0].clientX, y = e.touches[0].clientY;
+      if (!decided) {
+        if (Math.abs(y - sy) > 12 && Math.abs(y - sy) > Math.abs(x - sx)) { sx = null; return; }   // vertical scroll: ignore
+        if (x - sx < 8) return;
+        decided = true;
+        prevEl = prevScreen();
+        prevEl.hidden = false; prevEl.style.zIndex = '1';
+        el.style.zIndex = '2'; el.style.boxShadow = '-8px 0 24px rgba(0,0,0,.12)';
+        el.style.transition = prevEl.style.transition = 'none';
+      }
+      dx = Math.max(0, x - sx);
+      var dt = Math.max(1, e.timeStamp - lastT); vel = (x - lastX) / dt; lastX = x; lastT = e.timeStamp;
+      setX(dx);
     }, { passive: true });
     screensEl.addEventListener('touchend', function () {
       if (sx === null) return;
       sx = null;
-      el.style.transition = '';
-      if (dx > window.innerWidth * 0.3) { el.style.transform = ''; back(); }
-      else el.style.transform = '';
+      if (!decided) return;
+      var go = dx > w * 0.35 || vel > 0.45;
+      var ease = 'transform .22s cubic-bezier(.22,.61,.36,1)';
+      el.style.transition = prevEl.style.transition = ease;
+      if (go) {
+        setX(w);
+        setTimeout(function () {
+          cleanup();
+          swipeDone = true;      // the screen is already in place: no extra animation
+          back();
+        }, 230);
+      } else {
+        setX(0);
+        setTimeout(function () { var p = prevEl; cleanup(); if (p && p !== current.el) p.hidden = true; }, 230);
+      }
     });
   })();
 

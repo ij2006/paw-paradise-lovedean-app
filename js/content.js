@@ -138,9 +138,6 @@
           info('5–8 dogs', '£30')
         ], 'A lovely present for any dog owner.') +
         buy('Buy a gift certificate') +
-        group('Refunds', [
-          cell({ href: 'mailto:' + C.email + '?subject=Block%20booking%20or%20gift%20certificate%20refund', icon: icon('mail', 'green'), title: 'Email us about a refund', sub: C.email })
-        ], 'You can cancel an unused block booking or gift certificate within 14 days of purchase for a full refund. After 14 days, or once a session from a block booking has been used, they can\'t be refunded.') +
         '<p class="group-foot">Both are bought on the Book tab: choose the block booking or gift certificate option on the booking page.</p>';
     },
 
