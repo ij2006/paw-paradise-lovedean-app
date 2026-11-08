@@ -13,11 +13,11 @@ var PPApp = (function () {
 
   // tab: which tab it belongs to by default. depth 0 = tab screen.
   var ROUTES = {
-    home:    { title: 'Paw Paradise', tab: 'home', depth: 0, render: function (el) { el.innerHTML = PPC.home(); updateToday(el); } },
+    home:    { title: 'Paw Paradise', tab: 'home', depth: 0, render: function (el) { el.innerHTML = PPC.home(); updateToday(el); PPF.homeExtras(el); } },
     book:    { title: 'Book', tab: 'book', depth: 0, fixed: true, render: renderBook, onShow: loadBooking },
     gallery: { title: 'Gallery', tab: 'gallery', depth: 0, render: function (el) { PPF.gallery(el); } },
     more:    { title: 'More', tab: 'more', depth: 0, render: function (el) { el.innerHTML = PPC.more(); syncThemeButtons(); syncGlass(); PPStaff.syncIndicators(); } },
-    info:    { title: 'FAQs', tab: 'more', depth: 1, render: function (el) { el.innerHTML = PPC.info(); } },
+    info:    { title: 'FAQs', tab: 'more', depth: 1, render: renderInfo },
     faq:     { title: 'FAQs', tab: 'more', depth: 2, parent: 'info', render: function (el, slug, setTitle) { el.innerHTML = PPC.faqSubject(slug); setTitle(PPC.faqTitle(slug)); } },
     news:    { title: 'News', tab: 'more', depth: 1, render: function (el) { PPF.news(el); } },
     post:    { title: 'News', tab: 'more', depth: 2, parent: 'news', nocache: true, render: function (el, param, setTitle) { PPF.newsPost(el, param, setTitle); } },
@@ -49,6 +49,17 @@ var PPApp = (function () {
     el.appendChild(f);
   }
 
+  // ── FAQs: search across every subject ──
+  function renderInfo(el) {
+    el.innerHTML = PPC.info();
+    var input = el.querySelector('#faq-search'), results = el.querySelector('#faq-results'), subjects = el.querySelector('#faq-subjects');
+    input.addEventListener('input', function () {
+      var html = PPC.faqSearch(input.value);
+      results.hidden = !html; subjects.hidden = !!html;
+      results.innerHTML = html || '';
+    });
+  }
+
   // ── Home: today's opening hours ──
   var BANK_HOLIDAYS = ['2026-12-25', '2026-12-28', '2027-01-01', '2027-03-26', '2027-03-29', '2027-05-03', '2027-05-31', '2027-08-30', '2027-12-27', '2027-12-28',
                        '2028-01-03', '2028-04-14', '2028-04-17', '2028-05-01', '2028-05-29', '2028-08-28', '2028-12-25', '2028-12-26'];
@@ -68,6 +79,18 @@ var PPApp = (function () {
   var current = null;      // { key, name, el }
   var currentTab = 'home';
   var firstRender = true;
+  var pending = null;      // slide animation in progress
+
+  function finishTransition() {
+    if (!pending) return;
+    clearTimeout(pending.timer);
+    screensEl.classList.remove('anim-push', 'anim-pop', 'anim-fade');
+    Array.prototype.forEach.call(screensEl.children, function (s) {
+      s.classList.remove('is-entering', 'is-leaving');
+      if (!current || s !== current.el) s.hidden = true;
+    });
+    pending = null;
+  }
 
   function parse(hash) {
     var h = (hash || '').replace(/^#\/?/, '');
@@ -99,7 +122,8 @@ var PPApp = (function () {
     var y = current.el.scrollTop;
     topbar.classList.toggle('is-scrolled', y > 4);
     var def = ROUTES[current.name];
-    topbar.classList.toggle('show-title', y > 44 || def.depth > 0 || !!def.fixed);
+    var hasLarge = !!current.el.querySelector('.large-title');
+    topbar.classList.toggle('show-title', y > 44 || (def.depth > 0 && !hasLarge) || !!def.fixed);
   }
 
   function titleOf(r, el) { return (el && el.dataset.title) || ROUTES[r.name].title; }
@@ -118,10 +142,10 @@ var PPApp = (function () {
     else if (firstRender) currentTab = def.tab;
 
     // Tab bar
-    Array.prototype.forEach.call(tabs, function (t) {
+    Array.prototype.forEach.call(tabs, function (t, i) {
       var on = t.getAttribute('data-tab') === currentTab;
       t.classList.toggle('is-active', on);
-      if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
+      if (on) { t.setAttribute('aria-current', 'page'); placeLens(i); } else t.removeAttribute('aria-current');
     });
 
     // Top bar
@@ -140,26 +164,23 @@ var PPApp = (function () {
       backBtn.setAttribute('aria-label', bl === 'Back' ? 'Back' : 'Back to ' + bl);
     }
 
-    // Swap screens with a transition
+    // Swap screens with a transition.
+    // Finish any slide still in progress first, so a quick second tap can never
+    // leave the wrong screen showing.
+    finishTransition();
     var motion = document.documentElement.getAttribute('data-motion') !== 'reduced' && !firstRender && prev && prev.el !== el;
     el.hidden = false;
-    if (prev && prev.el !== el) {
+    Array.prototype.forEach.call(screensEl.children, function (s) {
+      if (s !== el && (!motion || s !== (prev && prev.el))) s.hidden = true;
+    });
+    if (motion) {
       var old = prev.el;
-      if (motion) {
-        var cls = direction === 'push' ? 'anim-push' : direction === 'pop' ? 'anim-pop' : 'anim-fade';
-        screensEl.classList.add(cls);
-        el.classList.add('is-entering');
-        old.classList.add('is-leaving');
-        setTimeout(function () {
-          screensEl.classList.remove('anim-push', 'anim-pop', 'anim-fade');
-          el.classList.remove('is-entering');
-          old.classList.remove('is-leaving');
-          old.hidden = true;
-          if (direction === 'pop' && ROUTES[prev.name] && ROUTES[prev.name].depth > 0 && stack.indexOf(prev.key) === -1 && !ROUTES[prev.name].nocache) { /* keep cached */ }
-        }, 340);
-      } else {
-        old.hidden = true;
-      }
+      old.hidden = false;
+      var cls = direction === 'push' ? 'anim-push' : direction === 'pop' ? 'anim-pop' : 'anim-fade';
+      screensEl.classList.add(cls);
+      el.classList.add('is-entering');
+      old.classList.add('is-leaving');
+      pending = { old: old, timer: setTimeout(finishTransition, 340) };
     }
     if (def.onShow) def.onShow(el);
     onScroll();
@@ -283,11 +304,77 @@ var PPApp = (function () {
   });
   backBtn.addEventListener('click', back);
 
+  // ── Tab bar you can slide along ─────────────
+  // Press and drag across the bar: a glass highlight follows your finger
+  // and opens the tab you let go on (like the iPhone's own tab bars).
+  var tabbar = document.getElementById('tabbar'), lens = document.getElementById('tab-lens');
+  var suppressClick = 0;
+  function tabWidth() { return tabs[0].getBoundingClientRect().width; }
+  function placeLens(i, px) {
+    if (!lens || !tabs.length) return;
+    var x = typeof px === 'number' ? px : tabs[i].offsetLeft;
+    lens.style.width = tabWidth() + 'px';
+    lens.style.transform = 'translateX(' + x + 'px)';
+  }
+  function tabIndexAt(clientX) {
+    var r = tabbar.getBoundingClientRect(), w = tabWidth(), pad = tabs[0].offsetLeft;
+    return Math.max(0, Math.min(tabs.length - 1, Math.floor((clientX - r.left - pad) / w)));
+  }
+  (function () {
+    var startX = null, dragging = false, hoverIndex = -1;
+    tabbar.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      startX = e.clientX; dragging = false; hoverIndex = -1;
+    });
+    tabbar.addEventListener('pointermove', function (e) {
+      if (startX === null) return;
+      if (!dragging && Math.abs(e.clientX - startX) > 8) {
+        dragging = true;
+        tabbar.classList.add('is-dragging');
+        try { tabbar.setPointerCapture(e.pointerId); } catch (err) {}
+      }
+      if (!dragging) return;
+      var r = tabbar.getBoundingClientRect(), w = tabWidth(), pad = tabs[0].offsetLeft;
+      var x = Math.max(pad, Math.min(r.width - pad - w, e.clientX - r.left - w / 2));
+      placeLens(0, x);
+      var i = tabIndexAt(e.clientX);
+      if (i !== hoverIndex) {
+        hoverIndex = i;
+        Array.prototype.forEach.call(tabs, function (t, k) { t.classList.toggle('is-hover', k === i); });
+        if (navigator.vibrate) { try { navigator.vibrate(4); } catch (err) {} }
+      }
+    });
+    function end(e) {
+      if (startX === null) return;
+      startX = null;
+      if (!dragging) return;
+      dragging = false;
+      tabbar.classList.remove('is-dragging');
+      Array.prototype.forEach.call(tabs, function (t) { t.classList.remove('is-hover'); });
+      suppressClick = Date.now();
+      var i = tabIndexAt(e.clientX);
+      var name = tabs[i].getAttribute('data-tab');
+      if (current && currentTab === name) {
+        Array.prototype.forEach.call(tabs, function (t, k) { if (t.classList.contains('is-active')) placeLens(k); });
+      } else {
+        location.hash = '#/' + name;
+      }
+    }
+    tabbar.addEventListener('pointerup', end);
+    tabbar.addEventListener('pointercancel', function () {
+      startX = null; dragging = false; tabbar.classList.remove('is-dragging');
+      Array.prototype.forEach.call(tabs, function (t, k) { t.classList.remove('is-hover'); if (t.classList.contains('is-active')) placeLens(k); });
+    });
+    // A slide shouldn't also count as a tap
+    tabbar.addEventListener('click', function (e) { if (Date.now() - suppressClick < 400) { e.preventDefault(); e.stopPropagation(); } }, true);
+    window.addEventListener('resize', function () { Array.prototype.forEach.call(tabs, function (t, k) { if (t.classList.contains('is-active')) placeLens(k); }); });
+  })();
+
   // Swipe from the left edge to go back
   (function () {
     var sx = null, sy = 0, dx = 0, el = null;
     screensEl.addEventListener('touchstart', function (e) {
-      if (!current || ROUTES[current.name].depth === 0 || e.touches[0].clientX > 24) { sx = null; return; }
+      if (!document.documentElement.classList.contains('is-installed') || !current || ROUTES[current.name].depth === 0 || e.touches[0].clientX > 24) { sx = null; return; }
       sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; el = current.el;
     }, { passive: true });
     screensEl.addEventListener('touchmove', function (e) {
@@ -373,15 +460,17 @@ var PPApp = (function () {
     setTimeout(function () { splash.classList.add('is-gone'); setTimeout(function () { splash.remove(); }, 400); }, 450);
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       // When a new version takes over, reload once so it shows straight away
-      var hadController = !!navigator.serviceWorker.controller, reloaded = false;
+      // (only in the first few seconds after opening, never while someone is using the app;
+      //  otherwise the update simply appears the next time the app is opened)
+      var hadController = !!navigator.serviceWorker.controller, reloaded = false, startedAt = Date.now();
       navigator.serviceWorker.addEventListener('controllerchange', function () {
-        if (!hadController || reloaded) return;
+        if (!hadController || reloaded || Date.now() - startedAt > 4000 || PPUI.hasLayer()) return;
         reloaded = true;
-        if (!PPUI.hasLayer()) location.reload();
+        location.reload();
       });
       navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (reg) {
         // Check for a new version whenever the app comes back to the front
-        document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') reg.update().catch(function () {}); });
+        document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { startedAt = Date.now(); reg.update().catch(function () {}); } });
       }).catch(function () {});
     }
   }

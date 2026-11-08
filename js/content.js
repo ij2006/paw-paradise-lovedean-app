@@ -85,9 +85,13 @@
     home: function () {
       return '' +
       '<header class="home-head">' +
-        '<img src="images/logo.png" alt="" width="52" height="52" />' +
+        '<img src="images/logo.png" alt="" width="48" height="48" />' +
         '<h1 class="large-title home-title">Paw Paradise</h1>' +
       '</header>' +
+      '<figure class="hero">' +
+        '<img src="images/hero.jpg" alt="Aerial view of the Paw Paradise dog field surrounded by woodland" width="1200" height="640" />' +
+        '<figcaption><strong>Secure, private dog field</strong><span>Lovedean · South Downs National Park</span></figcaption>' +
+      '</figure>' +
       '<div class="group home-status">' +
         info('Opening ' + C.openingDateShort, '', { icon: icon('calendar', 'green'), sub: 'Bookings are open now', extra: 'data-opening' }) +
         '<div class="cell cell--static" data-after-opening>' + icon('clock', 'green') +
@@ -95,17 +99,24 @@
       '</div>' +
       '<div class="home-book"><a class="btn btn-primary btn-block" href="#/book">Book a session</a></div>' +
       group('Sessions', [
-        info('Session length', '50 minutes', { sub: 'The whole field, just for you' }),
+        info('Session length', '50 minutes'),
         info('1–4 dogs', '£12'),
-        info('5–8 dogs', '£15')
+        info('5–8 dogs', '£15'),
+        cell({ href: '#/faq/bookings', title: 'Block bookings &amp; gift certificates' })
       ]) +
       group('Opening hours', [
         info('April – October', '7am – 9pm', { sub: 'Monday to Saturday' }),
         info('April – October', '8am – 9pm', { sub: 'Sundays &amp; bank holidays' }),
         info('November – March', '8am – 9pm', { sub: 'Every day' })
       ]) +
+      '<div class="section-head"><h2 class="group-title">Take a look</h2><a class="see-all" href="#/gallery">See all</a></div>' +
+      '<div class="photo-strip" id="home-strip"></div>' +
+      '<div id="home-news"></div>' +
       group('Find us', [
-        cell({ href: w3wLink(), external: true, icon: icon('pin', 'red'), title: w3wTitle(), sub: 'Tagdell Lane, Lovedean' })
+        cell({ href: w3wLink(), external: true, icon: icon('pin', 'green'), title: w3wTitle(), sub: 'Tagdell Lane, Lovedean' })
+      ]) +
+      group('', [
+        cell({ href: '#/info', icon: icon('info', 'green'), title: 'Information &amp; FAQs' })
       ]);
     },
 
@@ -197,15 +208,41 @@
       return groups;
     },
 
-    // ── INFORMATION & FAQS: pick a subject ───
+    // ── INFORMATION & FAQS: search or pick a subject ───
     info: function () {
       var groups = this.faqGroups();
-      return '<h1 class="sr-only">Information &amp; FAQs</h1>' +
-        group('Choose a subject', groups.map(function (g) {
-          var ic = FAQ_ICONS[g.slug] || ['info', 'grey'];
-          return cell({ href: '#/faq/' + g.slug, icon: icon(ic[0], ic[1]), title: g.title, value: String(g.items.length) });
-        })) +
-        group('', [cell({ href: '#/contact', icon: icon('mail', 'green'), title: 'Still have a question?', sub: 'Contact us' })]);
+      var DESC = {
+        planning: 'Opening times, sessions, location and facilities',
+        arrival: 'Gate codes, parking, lighting and leaving',
+        rules: 'Dog waste, digging, equipment and weather',
+        health: 'Vaccinations, breeds and unwell dogs',
+        bookings: 'Cancellations, refunds, block bookings and gifts'
+      };
+      return '<h1 class="large-title">FAQs</h1>' +
+        '<div class="search"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>' +
+          '<input type="search" id="faq-search" placeholder="Search questions" aria-label="Search questions" autocomplete="off" enterkeyhint="search" /></div>' +
+        '<div id="faq-results" hidden></div>' +
+        '<div id="faq-subjects">' +
+          group('', groups.map(function (g) {
+            var ic = FAQ_ICONS[g.slug] || ['info'];
+            return cell({ href: '#/faq/' + g.slug, icon: icon(ic[0], 'green'), title: g.title, sub: DESC[g.slug] || '' });
+          })) +
+          group('', [cell({ href: '#/contact', icon: icon('mail', 'green'), title: 'Still have a question?', sub: 'Get in touch' })]) +
+        '</div>';
+    },
+    faqSearch: function (query) {
+      var q = query.trim().toLowerCase();
+      if (!q) return null;
+      var hits = [];
+      this.faqGroups().forEach(function (g) {
+        g.items.forEach(function (html) {
+          var text = html.replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').toLowerCase();
+          if (text.indexOf(q) !== -1) hits.push(html);
+        });
+      });
+      return hits.length
+        ? '<div class="group group--faq">' + hits.join('') + '</div><p class="group-foot">' + hits.length + ' matching question' + (hits.length === 1 ? '' : 's') + '</p>'
+        : '<p class="empty">No questions match "' + query.replace(/[<>&"]/g, '') + '".</p>';
     },
     faqTitle: function (slug) {
       var g = this.faqGroups().filter(function (x) { return x.slug === slug; })[0];

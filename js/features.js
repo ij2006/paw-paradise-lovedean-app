@@ -336,6 +336,33 @@ var PPF = (function () {
     });
   }
 
+  // ── HOME extras: photo strip + latest news ──
+  function homeExtras(el) {
+    var strip = el.querySelector('#home-strip');
+    if (strip) {
+      var picks = [0, 4, 5, 12, 13, 7];
+      strip.innerHTML = picks.map(function (i) {
+        var it = GALLERY[i];
+        return '<button type="button" class="strip-item" data-strip="' + i + '" aria-label="' + esc(it.alt) + '"><img src="' + esc(it.thumb) + '" alt="" loading="lazy" decoding="async" /></button>';
+      }).join('');
+      strip.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-strip]');
+        if (b) PPUI.viewer(GALLERY, +b.getAttribute('data-strip'));
+      });
+    }
+    var box = el.querySelector('#home-news');
+    if (!box || !db || offline()) return;
+    db.from('blog_posts').select('id, title, created_at').eq('published', true).order('created_at', { ascending: false }).limit(1).then(function (res) {
+      var p = res.data && res.data[0];
+      if (!p) return;
+      box.innerHTML = '<h2 class="group-title">Latest news</h2><div class="group">' +
+        '<a class="cell" href="#/news/' + p.id + '"><span class="cell-icon cell-icon--green" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="4" y="5" width="16" height="14" rx="2.5"/><path d="M8 9.5h8M8 12.5h8M8 15.5h5"/></svg></span>' +
+        '<span class="cell-main"><span class="cell-title">' + esc(p.title) + '</span><span class="cell-sub">' + PPUI.fmtDate(p.created_at, true) + '</span></span>' +
+        '<svg class="cell-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a>' +
+        '<a class="cell" href="#/news"><span class="cell-main"><span class="cell-title">All news</span></span><svg class="cell-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></a></div>';
+    }, function () {});
+  }
+
   // ── POP-UPS ─────────────────────────────────
   function legalSheet(which) {
     var doc = PP_LEGAL[which] || PP_LEGAL.privacy;
@@ -420,8 +447,8 @@ var PPF = (function () {
       if (isInstalled()) { show('<p class="center">You\'re already using the app.</p>', focus); return; }
       show('<p class="install-q">Which phone do you have?</p>' +
         '<div class="platform-pick">' +
-          '<button type="button" class="platform-btn' + (ios ? ' is-likely' : '') + '" data-platform="ios"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.8"/><path d="M10.5 5h3"/></svg>iPhone<small>Add to Home Screen</small></button>' +
-          '<button type="button" class="platform-btn' + (android ? ' is-likely' : '') + '" data-platform="android"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.8"/><path d="M10.5 5h3"/></svg>Android<small>Install in one tap</small></button>' +
+          '<button type="button" class="platform-btn' + (ios ? ' is-likely' : '') + '" data-platform="ios"><span class="platform-emoji" aria-hidden="true">🍎</span>iPhone<small>Add to Home Screen</small></button>' +
+          '<button type="button" class="platform-btn' + (android ? ' is-likely' : '') + '" data-platform="android"><span class="platform-emoji" aria-hidden="true">🤖</span>Android<small>Install in one tap</small></button>' +
         '</div>', focus);
     }
 
@@ -501,7 +528,7 @@ var PPF = (function () {
   }
 
   return {
-    getAdmin: getAdmin, gallery: gallery, installSheet: installSheet, renderInstall: renderInstall, isInstalled: isInstalled, isIOS: isIOS,
+    getAdmin: getAdmin, gallery: gallery, homeExtras: homeExtras, installSheet: installSheet, renderInstall: renderInstall, isInstalled: isInstalled, isIOS: isIOS,
     news: news, newsPost: newsPost, composeSheet: composeSheet, openSheet: openSheet
   };
 })();

@@ -2,13 +2,13 @@
 // Saves the app on the phone so it works without signal.
 // App code is always fetched fresh when online, so updates appear straight away.
 // Bumping VERSION after a change also clears old saved copies.
-const VERSION = 'pp-app-v7';
+const VERSION = 'pp-app-v9';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './css/app.css',
   './js/vendor/supabase.js', './js/config.js', './js/legal.js', './js/content.js',
   './js/ui.js', './js/install-pictures.js', './js/features.js', './js/staff.js', './js/app.js',
-  './images/logo.png', './images/icons/icon-192.png', './images/icons/icon-32.png', './images/icons/apple-touch-icon.png',
+  './images/logo.png', './images/hero.jpg', './images/icons/icon-192.png', './images/icons/icon-32.png', './apple-touch-icon.png',
   // Gallery thumbnails (small), so the gallery grid shows even without signal
   './images/gallery/thumbs/aerial-view.jpg',
   './images/gallery/thumbs/and-were-off.jpg',
@@ -80,6 +80,9 @@ self.addEventListener('fetch', event => {
     );
     return;
   }
+
+  // App icons: always the latest (so a new home screen icon is picked up)
+  if (/apple-touch-icon|\/icons\//.test(url.pathname)) return;
 
   // Photos: instant from the saved copy, refreshed in the background
   if (/\.(png|jpe?g|gif|webp|svg|ico)$/i.test(url.pathname)) {
