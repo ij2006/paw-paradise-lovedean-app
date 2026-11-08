@@ -1093,3 +1093,8 @@ html.fit-stretch .splash { position: absolute; }
 [data-theme="dark"] .stat-num { color: #A9D5B6; }
 .stat-label { font-weight: 600; font-size: .95rem; color: var(--text); }
 .stat-sub { font-size: .78rem; color: var(--text-light); }
+
+/* Dark mode: the logo sits on a cream disc, so its light edges blend in instead of
+   showing as white bits against the dark background */
+[data-theme="dark"] .splash img,
+[data-theme="dark"] .landing-logo { background: #F7F2E9; border-radius: 50%; clip-path: circle(39.2% at 50.7% 49.9%); }
