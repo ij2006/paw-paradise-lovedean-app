@@ -199,9 +199,9 @@ var PPApp = (function () {
       // Hold on the first frame until the phone has actually drawn it, then play.
       // Otherwise a busy first frame swallows the start of the slide and it looks like a jump.
       a1.pause(); a2.pause();
-      requestAnimationFrame(function () { requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
         if (pending && pending.anims && pending.anims[0] === a1) { a1.play(); a2.play(); }
-      }); });
+      });
       document.documentElement.classList.add('is-animating');
       var mine = { old: old, anims: [a1, a2], timer: setTimeout(finishTransition, 900) };
       pending = mine;
@@ -212,9 +212,14 @@ var PPApp = (function () {
     onScroll();
 
     if (!firstRender) {
-      var h1 = el.querySelector('h1');
-      if (h1) { h1.setAttribute('tabindex', '-1'); try { h1.focus({ preventScroll: true }); } catch (e) {} }
-      PPUI.announce(titleOf(r, el));
+      // Move screen-reader focus once the slide has finished, so it can't hold the slide up
+      var title = titleOf(r, el);
+      setTimeout(function () {
+        if (!current || current.el !== el) return;
+        var h1 = el.querySelector('h1');
+        if (h1) { h1.setAttribute('tabindex', '-1'); try { h1.focus({ preventScroll: true }); } catch (e) {} }
+        PPUI.announce(title);
+      }, motion ? 380 : 0);
     }
     document.title = (r.name === 'home' ? '' : titleOf(r, el) + ' · ') + 'Paw Paradise Lovedean';
     firstRender = false;
@@ -242,22 +247,32 @@ var PPApp = (function () {
 
   function go(name) { navigate('#/' + name); }
 
-  // Change screen now and record it in the history (so Back and swiping work)
-  function navigate(hash) {
-    navIntent = Date.now();
+  // On iPhone (from the home screen) the app keeps its own Back/Forward list instead
+  // of using the browser history. Every history step makes iPhone take a picture of
+  // the screen for its own swipe-back, which held up the start of each page slide,
+  // and its swipe only worked once it had a picture. The app's own swipes (below)
+  // work on every page, every time. Android keeps the real history for its Back button.
+  var OWN_HISTORY = window.navigator.standalone === true;
+
+  // Change screen now. quiet = no slide (the screen is already in place after a swipe)
+  function navigate(hash, quiet) {
+    navIntent = quiet ? 0 : Date.now();
     if (location.hash === hash) return;
-    history.pushState(null, '', hash);
+    if (OWN_HISTORY) history.replaceState(null, '', hash); else history.pushState(null, '', hash);
     onHashChange();
   }
+  function replaceRoute(hash) {
+    if (OWN_HISTORY) { history.replaceState(null, '', hash); onHashChange(); } else location.replace(hash);
+  }
 
-  function back() {
-    navIntent = Date.now();
+  function back(quiet) {
+    navIntent = quiet ? 0 : Date.now();
     if (PPUI.hasLayer()) { PPUI.closeTop(); return; }
-    if (stack.length > 1) { history.back(); return; }
+    if (stack.length > 1) { if (OWN_HISTORY) navigate('#/' + stack[stack.length - 2], quiet); else history.back(); return; }
     var def = ROUTES[current.name];
     var parent = def.parent || def.tab;
     stack = [parent];
-    location.replace('#/' + parent);
+    replaceRoute('#/' + parent);
   }
 
   // Rebuild a screen next time it's opened (e.g. after a new post)
@@ -333,7 +348,7 @@ var PPApp = (function () {
       var tab = t.getAttribute('data-tab');
       if (current && currentTab === tab) {
         e.preventDefault();
-        if (ROUTES[current.name].depth > 0) { stack = [tab]; location.replace('#/' + tab); }
+        if (ROUTES[current.name].depth > 0) { stack = [tab]; replaceRoute('#/' + tab); }
         else current.el.scrollTo({ top: 0, behavior: document.documentElement.getAttribute('data-motion') === 'reduced' ? 'auto' : 'smooth' });
       }
       return;
@@ -393,10 +408,10 @@ var PPApp = (function () {
           var name = t.getAttribute('data-tab');
           suppressClick = Date.now();
           if (current && currentTab === name) {
-            if (ROUTES[current.name].depth > 0) { stack = [name]; location.replace('#/' + name); }
+            if (ROUTES[current.name].depth > 0) { stack = [name]; replaceRoute('#/' + name); }
             else current.el.scrollTo({ top: 0, behavior: document.documentElement.getAttribute('data-motion') === 'reduced' ? 'auto' : 'smooth' });
           } else {
-            location.hash = '#/' + name;
+            navigate('#/' + name);
           }
         }
       }
@@ -432,7 +447,7 @@ var PPApp = (function () {
       if (current && currentTab === name) {
         Array.prototype.forEach.call(tabs, function (t, k) { if (t.classList.contains('is-active')) placeLens(k); });
       } else {
-        location.hash = '#/' + name;
+        navigate('#/' + name);
       }
     }
     tabbar.addEventListener('pointerup', end);
@@ -500,7 +515,7 @@ var PPApp = (function () {
         if (location.hash !== startHash) { cleanup(); return; }   // the phone already went forward itself
         afterNav = cleanup;
         setTimeout(function () { if (afterNav === cleanup) { afterNav = null; cleanup(); } }, 800);
-        history.forward();
+        if (OWN_HISTORY) navigate('#/' + fwd[fwd.length - 1], true); else history.forward();
       }, 290);
     });
   })();
@@ -533,6 +548,61 @@ var PPApp = (function () {
   }, { passive: true });
   screensEl.addEventListener('pointercancel', unwarm, { passive: true });
   screensEl.addEventListener('scroll', function () { if (warm) unwarm(); }, { passive: true, capture: true });
+
+  // Swipe in from the left edge to go back (iPhone): the previous screen shows
+  // underneath and follows your finger. Works on every inner page, every time.
+  (function () {
+    var sx = null, sy = 0, dx = 0, lastX = 0, lastT = 0, vel = 0, el = null, prevEl = null, decided = false, w = 0, startHash = '';
+    function setX(d) {
+      el.style.transform = 'translate3d(' + d + 'px,0,0)';
+      prevEl.style.transform = 'translate3d(' + (-0.3 * (w - d)) + 'px,0,0)';
+    }
+    function cleanup() {
+      [el, prevEl].forEach(function (n) { if (n) { n.style.transition = ''; n.style.transform = ''; n.style.zIndex = ''; n.style.willChange = ''; } });
+      if (prevEl && current && prevEl !== current.el) prevEl.hidden = true;
+    }
+    screensEl.addEventListener('touchstart', function (e) {
+      sx = null;
+      if (!OWN_HISTORY || pending || !current || PPUI.hasLayer() || ROUTES[current.name].depth === 0) return;
+      var x = e.touches[0].clientX;
+      if (x > 30) return;
+      sx = lastX = x; sy = e.touches[0].clientY; lastT = e.timeStamp; dx = 0; vel = 0; decided = false;
+      el = current.el; w = screensEl.clientWidth; prevEl = null; startHash = location.hash;
+    }, { passive: true });
+    screensEl.addEventListener('touchmove', function (e) {
+      if (sx === null) return;
+      var x = e.touches[0].clientX, y = e.touches[0].clientY;
+      if (!decided) {
+        if (Math.abs(y - sy) > 12 && Math.abs(y - sy) > Math.abs(x - sx)) { sx = null; return; }
+        if (x - sx < 8) return;
+        decided = true;
+        var prevKey = stack[stack.length - 2];
+        var r = prevKey ? parse('#/' + prevKey) : parse('#/' + (ROUTES[current.name].parent || ROUTES[current.name].tab));
+        if (!cache[r.key] || ROUTES[r.name].nocache) { if (cache[r.key]) cache[r.key].remove(); cache[r.key] = makeScreen(r); }
+        prevEl = cache[r.key];
+        prevEl.hidden = false; prevEl.style.zIndex = '1'; el.style.zIndex = '2';
+        prevEl.style.willChange = el.style.willChange = 'transform';
+        prevEl.style.transition = el.style.transition = 'none';
+      }
+      dx = Math.max(0, x - sx);
+      var dt = Math.max(1, e.timeStamp - lastT); vel = (x - lastX) / dt; lastX = x; lastT = e.timeStamp;
+      setX(dx);
+    }, { passive: true });
+    screensEl.addEventListener('touchend', function () {
+      if (sx === null) return;
+      sx = null;
+      if (!decided) return;
+      var go = dx > w * 0.35 || vel > 0.45;
+      prevEl.style.transition = el.style.transition = 'transform .28s cubic-bezier(.32,.72,0,1)';
+      setX(go ? w : 0);
+      setTimeout(function () {
+        if (!go || location.hash !== startHash) { cleanup(); return; }
+        afterNav = cleanup;
+        setTimeout(function () { if (afterNav === cleanup) { afterNav = null; cleanup(); } }, 800);
+        back(true);
+      }, 290);
+    });
+  })();
 
   var navIntent = 0;
   function markIntent() { navIntent = Date.now(); }
@@ -582,14 +652,17 @@ var PPApp = (function () {
     if (def.depth === 2) stack = [def.tab, def.parent, r.key];
     if (recovery) {
       history.replaceState(null, '', '#/' + def.tab);
-      history.pushState(null, '', '#/staff');
+      if (OWN_HISTORY) history.replaceState(null, '', '#/staff'); else history.pushState(null, '', '#/staff');
       stack = [def.tab, 'staff'];
     } else if (!location.hash || location.hash === '#' || location.hash === '#/') {
       history.replaceState(null, '', '#/home');
     } else if (def.depth > 0) {
       // Opened straight onto an inner screen: put its parent screens underneath, so Back stays in the app
-      history.replaceState(null, '', '#/' + stack[0]);
-      for (var i = 1; i < stack.length; i++) history.pushState(null, '', '#/' + stack[i]);
+      if (OWN_HISTORY) history.replaceState(null, '', location.hash);
+      else {
+        history.replaceState(null, '', '#/' + stack[0]);
+        for (var i = 1; i < stack.length; i++) history.pushState(null, '', '#/' + stack[i]);
+      }
     }
     show(r);
     window.addEventListener('hashchange', onHashChange);

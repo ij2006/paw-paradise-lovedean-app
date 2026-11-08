@@ -325,7 +325,7 @@ var PPF = (function () {
         posts = posts.filter(function (x) { return x.id !== p.id; });
         PPUI.toast('Post deleted');
         PPApp.refresh('news');
-        history.back();
+        PPApp.back();
       });
     });
   }
