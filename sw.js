@@ -2,13 +2,13 @@
 // Saves the app on the phone so it works without signal.
 // App code is always fetched fresh when online, so updates appear straight away.
 // Bumping VERSION after a change also clears old saved copies.
-const VERSION = 'pp-app-v13';
+const VERSION = 'pp-app-v14';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './css/app.css',
   './js/fit.js', './js/vendor/supabase.js', './js/config.js', './js/legal.js', './js/content.js',
   './js/ui.js', './js/install-pictures.js', './js/features.js', './js/staff.js', './js/app.js',
-  './images/logo.png', './images/hero-dog.jpg', './images/icons/pp-icon-192.png', './images/icons/icon-32.png',
+  './images/logo.png', './images/hero-dog-tunnel.jpg', './images/icons/pp-icon-192.png', './images/icons/icon-32.png',
   // Gallery thumbnails (small), so the gallery grid shows even without signal
   './images/gallery/thumbs/aerial-view.jpg',
   './images/gallery/thumbs/and-were-off.jpg',

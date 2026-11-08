@@ -23,8 +23,8 @@ var PPApp = (function () {
     post:    { title: 'News', tab: 'more', depth: 2, parent: 'news', nocache: true, render: function (el, param, setTitle) { PPF.newsPost(el, param, setTitle); } },
     offers:  { title: 'Block bookings & gifts', tab: 'home', depth: 1, render: function (el) { el.innerHTML = PPC.offers(); } },
     contact: { title: 'Contact', tab: 'more', depth: 1, render: function (el) { el.innerHTML = PPC.contact(); } },
-    staff:   { title: 'Staff', tab: 'more', depth: 1, nocache: true, render: function (el) { PPStaff.render(el); } },
-    staffsub:{ title: 'Staff', tab: 'more', depth: 2, parent: 'staff', nocache: true, render: function (el, which, setTitle) { PPStaff.renderSub(el, which, setTitle); } }
+    staff:   { title: 'Admin', tab: 'more', depth: 1, nocache: true, render: function (el) { PPStaff.render(el); } },
+    staffsub:{ title: 'Admin', tab: 'more', depth: 2, parent: 'staff', nocache: true, render: function (el, which, setTitle) { PPStaff.renderSub(el, which, setTitle); } }
   };
 
   // ── Book tab: the Acuity booking page, filling the screen ──
@@ -322,7 +322,7 @@ var PPApp = (function () {
     PPUI.sheet({ title: 'Screen check', html: '<div class="group">' +
       PPC.row('Screen', f.screen || '?') + PPC.row('App area', f.viewport || '?') +
       PPC.row('Notch (iOS)', (i.top || 0) + 'pt') + PPC.row('Home bar (iOS)', (i.bottom || 0) + 'pt') +
-      PPC.row('Notch used', getComputedStyle(document.documentElement).getPropertyValue('--safe-top-fb').trim() || '0px', { sub: 'Only if iOS reports none' }) +
+      PPC.row('Notch used', getComputedStyle(document.documentElement).getPropertyValue('--safe-top-fb').trim() || '0px', { sub: 'Only if iOS reports none' }) + PPC.row('Stretched', f.stretched ? 'Yes' : 'No') + PPC.row('Opened', ((performance.now() / 1000) | 0) + 's ago') +
       PPC.row('Version', PP_CONFIG.version) + '</div>' });
   });
 
@@ -482,11 +482,13 @@ var PPApp = (function () {
 
   // Build the main tabs in the background so the first tap on each is instant
   function prerenderTabs() {
-    var queue = ['home', 'gallery', 'more', 'book'];
+    // Main tabs first, then the screens they open, so every tap shows its screen straight away
+    var queue = ['home', 'gallery', 'more', 'book', 'offers', 'info', 'contact', 'news', 'faq/planning', 'faq/arrival', 'faq/rules', 'faq/health', 'faq/bookings'];
     function next() {
       var name = queue.shift();
       if (!name) return;
-      if (!cache[name]) cache[name] = makeScreen({ name: name, key: name });
+      var r = parse('#/' + name);
+      if (!cache[r.key] && !ROUTES[r.name].nocache) cache[r.key] = makeScreen(r);
       (window.requestIdleCallback || function (fn) { setTimeout(fn, 120); })(next);
     }
     setTimeout(next, 600);

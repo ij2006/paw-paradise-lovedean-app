@@ -78,6 +78,9 @@ var PPF = (function () {
       var html;
       if (which === 'visitors') {
         html = visitorItems.map(function (it, i) { return tile(it, i, 'visitors'); }).join('');
+      } else if (which === 'all') {
+        // Our photos and videos, then visitors' photos
+        html = GALLERY.concat(visitorItems).map(function (it, n) { return tile(it, n, 'all', n % 7 === 0 && n < GALLERY.length ? 'tile--wide' : ''); }).join('');
       } else {
         var list = which === 'photos' ? PHOTOS : which === 'videos' ? VIDEOS : GALLERY.map(function (_, i) { return i; });
         html = list.map(function (gi, n) { return tile(GALLERY[gi], gi, 'main', n % 7 === 0 ? 'tile--wide' : ''); }).join('');
@@ -95,10 +98,11 @@ var PPF = (function () {
     el.addEventListener('click', function (e) {
       var t = e.target.closest('[data-view]');
       if (!t) return;
-      var items = t.getAttribute('data-view') === 'main' ? GALLERY : visitorItems;
+      var v = t.getAttribute('data-view');
+      var items = v === 'main' ? GALLERY : v === 'all' ? GALLERY.concat(visitorItems) : visitorItems;
       PPUI.viewer(items, +t.getAttribute('data-index'));
     });
-    el._drawGallery = function () { if (which === 'visitors') draw(); };
+    el._drawGallery = function () { if (which === 'visitors' || which === 'all') draw(); };
     loadVisitorPhotos(el);
     PPUI.pullToRefresh(el, function () { return loadVisitorPhotos(el); });
   }
@@ -324,7 +328,7 @@ var PPF = (function () {
 
   async function composeSheet(onDone) {
     var admin = await getAdmin();
-    if (!admin) { PPUI.toast('Please sign in as staff first.', 'error'); return; }
+    if (!admin) { PPUI.toast('Please sign in as admin first.', 'error'); return; }
     PPUI.sheet({
       title: 'Write a post',
       tall: true,

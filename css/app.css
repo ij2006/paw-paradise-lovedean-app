@@ -1026,3 +1026,14 @@ html[data-fontsize="lg"] .topbar-title, html[data-fontsize="xl"] .topbar-title {
 .mosaic .play { width: 28px; height: 28px; top: auto; left: auto; right: 8px; bottom: 8px; transform: none; display: grid; place-items: center; border-radius: 50%; background: rgba(0,0,0,.5); color: #fff; }
 .mosaic .empty { grid-column: 1 / -1; }
 .hero { max-height: 52vh; }
+/* Home photo: tall enough to show the dog and the tunnel */
+.hero { aspect-ratio: 5 / 6; max-height: 64vh; }
+.hero img { object-position: center 60%; }
+@media (min-width: 560px) { .hero { aspect-ratio: 4 / 3; } .hero img { object-position: center 55%; } }
+/* iOS started the app short: stretch it to the whole screen (see fit.js) */
+html.fit-stretch, html.fit-stretch body { height: var(--screen-h); }
+html.fit-stretch .app { bottom: auto; height: var(--screen-h); }
+/* Taps register instantly (no waiting to see if it's a double-tap) */
+html { touch-action: manipulation; }
+/* Tab bar closer to the bottom edge */
+:root { --tab-gap: max(8px, calc(var(--safe-bottom) - 16px)); }

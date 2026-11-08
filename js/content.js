@@ -95,7 +95,7 @@
       return '' +
       '<h1 class="sr-only">Paw Paradise Lovedean</h1>' +
       '<figure class="hero">' +
-        '<img src="images/hero-dog.jpg" alt="Golden retriever standing on the grassy mound in the field" width="900" height="750" />' +
+        '<img src="images/hero-dog-tunnel.jpg" alt="Golden retriever standing on the grassy mound above the dog tunnel" width="900" height="1080" />' +
         '<figcaption><strong>Secure, private dog field</strong><span>Lovedean · South Downs National Park</span></figcaption>' +
       '</figure>' +
       '<div class="group home-status">' +
@@ -181,7 +181,7 @@
         cell({ attrs: 'data-sheet="terms"', icon: icon('doc', 'grey'), title: 'Terms &amp; Conditions' })
       ]) +
       group('', [
-        cell({ href: '#/staff', icon: icon('key', 'grey'), title: '<span id="staff-row-label">Staff login</span>' })
+        cell({ href: '#/staff', icon: icon('key', 'grey'), title: '<span id="staff-row-label">Admin login</span>' })
       ]) +
       '<p class="app-foot">Paw Paradise Lovedean · Version ' + C.version + '<br><a href="' + C.website + '" target="_blank" rel="noopener">pawparadiselovedean.co.uk</a></p>';
     },

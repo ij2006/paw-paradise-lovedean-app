@@ -37,7 +37,7 @@ var PPStaff = (function () {
 
   function signInView(errText) {
     var v = view(
-      '<h1 class="sr-only">Staff login</h1><p class="group-foot group-foot--top">For the Paw Paradise family only.</p>' +
+      '<h1 class="sr-only">Admin login</h1><p class="group-foot group-foot--top">For the Paw Paradise family only.</p>' +
       '<form class="group form-card form" id="st-signin" novalidate>' +
         '<div class="field"><label for="st-email">Email</label><input type="email" id="st-email" autocomplete="username" inputmode="email" /></div>' +
         '<div class="field"><label for="st-pass">Password</label><input type="password" id="st-pass" autocomplete="current-password" /></div>' +
@@ -65,7 +65,7 @@ var PPStaff = (function () {
       if (!email) { msgEl(v, 'st-msg', 'Type your email above first, then press this again.', 'error'); return; }
       var back = window.location.origin + window.location.pathname;
       var res = await db.auth.resetPasswordForEmail(email, { redirectTo: back });
-      msgEl(v, 'st-msg', res.error ? res.error.message : 'If that email has a staff account, a reset link is on its way.', res.error ? 'error' : 'success');
+      msgEl(v, 'st-msg', res.error ? res.error.message : 'If that email has an admin account, a reset link is on its way.', res.error ? 'error' : 'success');
     });
   }
 
@@ -90,7 +90,7 @@ var PPStaff = (function () {
   }
 
   function notAdminView() {
-    var v = view('<h1 class="inner-title">No staff access</h1><div class="group form-card"><p>This account isn\'t set up as staff. Staff access is switched on in Supabase.</p><button type="button" class="btn btn-secondary btn-block" id="st-out2">Sign out</button></div>');
+    var v = view('<h1 class="inner-title">No admin access</h1><div class="group form-card"><p>This account isn\'t set up as an admin. Admin access is switched on in Supabase.</p><button type="button" class="btn btn-secondary btn-block" id="st-out2">Sign out</button></div>');
     v.querySelector('#st-out2').addEventListener('click', signOut);
   }
 
@@ -104,7 +104,7 @@ var PPStaff = (function () {
   function dashboard(admin) {
     var C = PPC;
     var v = view(
-      '<h1 class="sr-only">Staff</h1>' +
+      '<h1 class="sr-only">Admin</h1>' +
       C.group('', [C.row('Signed in as ' + esc(admin.name), '', { icon: C.icon('key', 'green'), sub: esc(admin.email) })]) +
       C.group('Inbox', [
         C.cell({ href: '#/staff/suggestions', icon: C.icon('mail', 'green'), title: 'Suggestions', value: '<span id="cnt-sugg"></span>' }),
@@ -135,11 +135,11 @@ var PPStaff = (function () {
   // ── Staff lists: suggestions / photos to approve / published ──
   var SUB_TITLES = { suggestions: 'Suggestions', photos: 'Photos to approve', published: 'Published photos' };
   async function renderSub(el, which, setTitle) {
-    setTitle(SUB_TITLES[which] || 'Staff');
-    el.innerHTML = '<h1 class="sr-only">' + (SUB_TITLES[which] || 'Staff') + '</h1><div id="st-list"><div class="pad"><div class="skeleton"></div></div></div>';
+    setTitle(SUB_TITLES[which] || 'Admin');
+    el.innerHTML = '<h1 class="sr-only">' + (SUB_TITLES[which] || 'Admin') + '</h1><div id="st-list"><div class="pad"><div class="skeleton"></div></div></div>';
     if (!db) return;
     var admin = await PPF.getAdmin();
-    if (!admin) { el.querySelector('#st-list').innerHTML = '<p class="empty">Please sign in as staff first.</p>'; return; }
+    if (!admin) { el.querySelector('#st-list').innerHTML = '<p class="empty">Please sign in as admin first.</p>'; return; }
     if (which === 'suggestions') return listSuggestions(el);
     return listPhotos(el, which === 'published');
   }
@@ -160,7 +160,7 @@ var PPStaff = (function () {
         '<span class="cell-sub">' + PPUI.fmtDate(r.created_at) + ' · ' + (r.name || r.email ? esc(r.name || r.email) : 'Anonymous') + (old ? ' · over 12 months old' : '') + '</span>' +
         '<span class="cell-excerpt">' + esc(r.suggestion) + '</span></span>' + chev() + '</button>';
     }).join('') + '</div>' +
-    '<p class="group-foot">Only staff can see these. Please delete them once dealt with, and anything over 12 months old (our privacy policy says we keep them for up to 12 months).</p>';
+    '<p class="group-foot">Only admins can see these. Please delete them once dealt with, and anything over 12 months old (our privacy policy says we keep them for up to 12 months).</p>';
     box.querySelector('.group').addEventListener('click', function (e) {
       var b = e.target.closest('[data-i]'); if (!b) return;
       var r = rows[+b.getAttribute('data-i')];
@@ -206,7 +206,7 @@ var PPStaff = (function () {
     }).join('') + '</div>' +
     '<p class="group-foot">' + (live
       ? 'These show in the Gallery under "From our visitors". Delete one if someone asks for it to be removed.'
-      : 'Only staff can see these until approved. Please don\'t approve photos showing children\'s faces, car number plates or anything you\'re unsure about.') + '</p>';
+      : 'Only admins can see these until approved. Please don\'t approve photos showing children\'s faces, car number plates or anything you\'re unsure about.') + '</p>';
     box.querySelector('.group').addEventListener('click', function (e) {
       var b = e.target.closest('[data-i]'); if (!b) return;
       var p = rows[+b.getAttribute('data-i')];
@@ -248,7 +248,7 @@ var PPStaff = (function () {
     var pill = document.getElementById('staff-pill');
     if (pill) pill.hidden = !admin;
     var label = document.getElementById('staff-row-label');
-    if (label) label.textContent = admin ? 'Staff area' : 'Staff login';
+    if (label) label.textContent = admin ? 'Admin area' : 'Admin login';
     return admin;
   }
 
