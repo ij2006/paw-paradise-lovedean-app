@@ -6,13 +6,13 @@
 var PPStaff = (function () {
   var esc = PPUI.esc;
   var recovering = /type=recovery/.test(window.location.hash);
-  var CATS = { facilities: 'Field & facilities', booking: 'Booking & sessions', website: 'Website or app', dogs: 'Dogs & welfare', other: 'Other' };
+  var CATS = { facilities: 'Field & facilities', booking: 'Booking & sessions', website: 'Website', dogs: 'Dogs & welfare', other: 'Other' };
   var screenEl = null;
   var activeTab = 'suggestions';
 
   function render(el) {
     screenEl = el;
-    el.innerHTML = '<section class="section section--first"><p class="center small" id="st-loading">Checking sign-in…</p><div id="st-view"></div></section>';
+    el.innerHTML = '<p class="empty" id="st-loading">Checking sign-in…</p><div id="st-view"></div>';
     route();
   }
 
@@ -32,8 +32,8 @@ var PPStaff = (function () {
 
   function signInView(errText) {
     var v = view(
-      '<p class="eyebrow">Family only</p><h1 class="screen-h1">Staff login</h1>' +
-      '<form class="card form" id="st-signin" novalidate>' +
+      '<h1 class="sr-only">Staff login</h1><p class="group-foot group-foot--top">For the Paw Paradise family only.</p>' +
+      '<form class="group form-card form" id="st-signin" novalidate>' +
         '<div class="field"><label for="st-email">Email</label><input type="email" id="st-email" autocomplete="username" inputmode="email" /></div>' +
         '<div class="field"><label for="st-pass">Password</label><input type="password" id="st-pass" autocomplete="current-password" /></div>' +
         '<p class="form-msg" id="st-msg" role="status" hidden></p>' +
@@ -66,8 +66,8 @@ var PPStaff = (function () {
 
   function newPasswordView() {
     var v = view(
-      '<h1 class="screen-h1">Choose a new password</h1>' +
-      '<form class="card form" id="st-newpass-form" novalidate>' +
+      '<h1 class="inner-title">Choose a new password</h1>' +
+      '<form class="group form-card form" id="st-newpass-form" novalidate>' +
         '<div class="field"><label for="st-newpass">New password (at least 8 characters)</label><input type="password" id="st-newpass" autocomplete="new-password" /></div>' +
         '<p class="form-msg" id="st-np-msg" role="status" hidden></p>' +
         '<button type="submit" class="btn btn-primary btn-block">Save password</button>' +
@@ -85,7 +85,7 @@ var PPStaff = (function () {
   }
 
   function notAdminView() {
-    var v = view('<h1 class="screen-h1">No staff access</h1><div class="card"><p>This account isn\'t set up as staff. Staff access is switched on in Supabase.</p><button type="button" class="btn btn-secondary btn-block" id="st-out2">Sign out</button></div>');
+    var v = view('<h1 class="inner-title">No staff access</h1><div class="group form-card"><p>This account isn\'t set up as staff. Staff access is switched on in Supabase.</p><button type="button" class="btn btn-secondary btn-block" id="st-out2">Sign out</button></div>');
     v.querySelector('#st-out2').addEventListener('click', signOut);
   }
 
@@ -97,7 +97,7 @@ var PPStaff = (function () {
 
   function dashboard(admin) {
     var v = view(
-      '<div class="staff-top"><div><p class="eyebrow">Staff area</p><h1 class="screen-h1">Hello, ' + esc(admin.name) + '</h1></div></div>' +
+      '<h1 class="inner-title">Hello, ' + esc(admin.name) + '</h1>' +
       '<div class="staff-actions">' +
         '<button type="button" class="btn btn-primary" id="st-write">Write a news post</button>' +
         '<button type="button" class="btn btn-secondary" id="st-out">Sign out</button>' +
@@ -108,7 +108,7 @@ var PPStaff = (function () {
         '<button type="button" role="tab" id="tab-live" aria-controls="panel-live" data-st-tab="live">Published <span class="badge" id="ad-live-count"></span></button>' +
       '</div>' +
       '<div role="tabpanel" id="panel-suggestions" aria-labelledby="tab-suggestions">' +
-        '<p class="hint">Sent from the Suggestions page or app, newest first. Only you can see these. Please delete them once dealt with, and anything older than 12 months (our privacy policy says we keep them for up to 12 months).</p>' +
+        '<p class="hint">Sent from the website\'s Suggestions page, newest first. Only you can see these. Please delete them once dealt with, and anything older than 12 months (our privacy policy says we keep them for up to 12 months).</p>' +
         '<div id="ad-sugg"></div></div>' +
       '<div role="tabpanel" id="panel-pending" aria-labelledby="tab-pending" hidden>' +
         '<p class="hint">Sent from the Gallery. Only you can see these until you approve them. Please don\'t approve photos showing children\'s faces, car number plates or anything you\'re unsure about.</p>' +
@@ -152,7 +152,7 @@ var PPStaff = (function () {
         ? esc(r.name || '') + (r.email ? ' <a href="mailto:' + esc(r.email) + '">' + esc(r.email) + '</a>' : '')
         : '<span class="muted">Anonymous</span>';
       var old = new Date(r.created_at).getTime() < yearAgo ? '<span class="tag-old">Over 12 months old</span>' : '';
-      return '<div class="card staff-item">' +
+      return '<div class="group form-card staff-item">' +
         '<div class="staff-item-head"><strong>' + esc(CATS[r.category] || r.category || 'Suggestion') + '</strong><span class="muted small">' + PPUI.fmtDate(r.created_at) + '</span></div>' + old +
         '<p class="staff-text">' + esc(r.suggestion) + '</p>' +
         '<div class="staff-item-foot"><span class="small">From: ' + who + '</span>' +
@@ -167,7 +167,7 @@ var PPStaff = (function () {
       ? '<button type="button" class="btn btn-danger btn-sm" data-act="delete-photo" data-id="' + p.id + '" data-path="' + esc(p.path) + '" data-live="1">Delete</button>'
       : '<button type="button" class="btn btn-primary btn-sm" data-act="approve-photo" data-id="' + p.id + '" data-path="' + esc(p.path) + '">Approve</button>' +
         '<button type="button" class="btn btn-danger btn-sm" data-act="delete-photo" data-id="' + p.id + '" data-path="' + esc(p.path) + '">Delete</button>';
-    return '<div class="card staff-photo">' +
+    return '<div class="group staff-photo">' +
       (url ? '<img src="' + esc(url) + '" alt="Submitted photo' + (p.dog || p.name ? ': ' + esc([p.dog, p.name].filter(Boolean).join(' with ')) : '') + '" loading="lazy" />' : '<div class="photo-missing">Photo missing</div>') +
       '<p>' + who + '</p><p class="muted small">' + PPUI.fmtDate(p.created_at) + '</p>' +
       '<div class="staff-item-foot">' + actions + '</div>' +

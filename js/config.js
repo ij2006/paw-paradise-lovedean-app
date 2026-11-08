@@ -8,7 +8,8 @@ var PP_CONFIG = {
   supabaseUrl: 'https://jtzuklfpkkvmhnobypjb.supabase.co',
   supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0enVrbGZwa2t2bWhub2J5cGpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMjA3NjcsImV4cCI6MjA5Mjg5Njc2N30._X8k5eRr6L7MbX-5VoS6JQFof1T3CcNF6Del7ks-U8M',
 
-  // Acuity booking pages (shown inside the app on the Book tab)
+  // Acuity booking page (fills the Book tab). 'all' shows every session type,
+  // block bookings and gift certificates.
   acuity: {
     all:      'https://app.acuityscheduling.com/schedule.php?owner=40722415',
     standard: 'https://app.acuityscheduling.com/schedule.php?owner=40722415&appointmentType=99841024',
@@ -37,6 +38,7 @@ var PP_CONFIG = {
 
   // Opening banner. It hides itself automatically after openingDay.
   openingDate: 'Monday 16 November 2026',
+  openingDateShort: 'Monday 16 November',
   openingDay: '2026-11-16',
-  version: '1.0.0'
+  version: '1.1.0'
 };

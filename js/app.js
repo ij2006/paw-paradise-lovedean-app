@@ -13,20 +13,55 @@ var PPApp = (function () {
 
   // tab: which tab it belongs to by default. depth 0 = tab screen.
   var ROUTES = {
-    home:        { title: 'Paw Paradise', tab: 'home', depth: 0, render: function (el) { el.innerHTML = PPC.home(); } },
-    book:        { title: 'Book', tab: 'book', depth: 0, render: function (el) { el.innerHTML = PPC.book(); } },
-    gallery:     { title: 'Gallery', tab: 'gallery', depth: 0, render: function (el) { PPF.gallery(el); } },
-    reviews:     { title: 'Reviews', tab: 'reviews', depth: 0, render: function (el) { el.innerHTML = PPC.reviews(); } },
-    more:        { title: 'More', tab: 'more', depth: 0, render: function (el) { el.innerHTML = PPC.more(); syncThemeButtons(); PPStaff.syncIndicators(); } },
-    info:        { title: 'Information & FAQs', tab: 'more', depth: 1, render: function (el) { el.innerHTML = PPC.info(); } },
-    about:       { title: 'Meet the team', tab: 'more', depth: 1, render: function (el) { el.innerHTML = PPC.about(); } },
-    news:        { title: 'News', tab: 'more', depth: 1, render: function (el) { PPF.news(el); } },
-    post:        { title: 'News', tab: 'more', depth: 2, parent: 'news', nocache: true, render: function (el, param, setTitle) { PPF.newsPost(el, param, setTitle); } },
-    suggestions: { title: 'Suggestions', tab: 'more', depth: 1, render: function (el) { PPF.suggestions(el); } },
-    contact:     { title: 'Contact', tab: 'more', depth: 1, render: function (el) { el.innerHTML = PPC.contact(); } },
-    staff:       { title: 'Staff', tab: 'more', depth: 1, nocache: true, render: function (el) { PPStaff.render(el); } }
+    home:    { title: 'Paw Paradise', tab: 'home', depth: 0, render: function (el) { el.innerHTML = PPC.home(); updateToday(el); } },
+    book:    { title: 'Book', tab: 'book', depth: 0, fixed: true, render: renderBook, onShow: loadBooking },
+    gallery: { title: 'Gallery', tab: 'gallery', depth: 0, render: function (el) { PPF.gallery(el); } },
+    more:    { title: 'More', tab: 'more', depth: 0, render: function (el) { el.innerHTML = PPC.more(); syncThemeButtons(); PPStaff.syncIndicators(); } },
+    info:    { title: 'Information & FAQs', tab: 'more', depth: 1, render: function (el) { el.innerHTML = PPC.info(); } },
+    news:    { title: 'News', tab: 'more', depth: 1, render: function (el) { PPF.news(el); } },
+    post:    { title: 'News', tab: 'more', depth: 2, parent: 'news', nocache: true, render: function (el, param, setTitle) { PPF.newsPost(el, param, setTitle); } },
+    contact: { title: 'Contact', tab: 'more', depth: 1, render: function (el) { el.innerHTML = PPC.contact(); } },
+    staff:   { title: 'Staff', tab: 'more', depth: 1, nocache: true, render: function (el) { PPStaff.render(el); } }
   };
 
+  // ── Book tab: the Acuity booking page, filling the screen ──
+  function renderBook(el) {
+    el.innerHTML =
+      '<h1 class="sr-only">Book a session</h1>' +
+      '<div class="booking-loading" id="booking-loading"><span class="spinner" aria-hidden="true"></span><p>Loading booking…</p>' +
+        '<p id="booking-slow" hidden>Taking a while? <a href="' + PP_CONFIG.acuity.all + '" target="_blank" rel="noopener">Open booking in your browser</a></p></div>' +
+      '<div class="booking-offline" id="booking-offline" hidden><p class="booking-offline-icon" aria-hidden="true">📶</p><p><strong>You\'re offline</strong></p><p>Connect to the internet to book a session.</p><button type="button" class="btn btn-primary" id="booking-retry">Try again</button></div>';
+    el.querySelector('#booking-retry').addEventListener('click', function () { loadBooking(el, true); });
+  }
+  function loadBooking(el, retry) {
+    var offline = navigator.onLine === false;
+    el.querySelector('#booking-offline').hidden = !offline;
+    el.querySelector('#booking-loading').hidden = offline || !!el.querySelector('iframe');
+    if (offline || (el.querySelector('iframe') && !retry)) return;
+    var old = el.querySelector('iframe'); if (old) old.remove();
+    var f = document.createElement('iframe');
+    f.title = 'Paw Paradise booking calendar';
+    f.src = PP_CONFIG.acuity.all;
+    f.setAttribute('allow', 'payment');
+    var slow = setTimeout(function () { var h = el.querySelector('#booking-slow'); if (h) h.hidden = false; }, 10000);
+    f.addEventListener('load', function () { clearTimeout(slow); el.querySelector('#booking-loading').hidden = true; });
+    el.appendChild(f);
+  }
+
+  // ── Home: today's opening hours ──
+  var BANK_HOLIDAYS = ['2026-12-25', '2026-12-28', '2027-01-01', '2027-03-26', '2027-03-29', '2027-05-03', '2027-05-31', '2027-08-30', '2027-12-27', '2027-12-28',
+                       '2028-01-03', '2028-04-14', '2028-04-17', '2028-05-01', '2028-05-29', '2028-08-28', '2028-12-25', '2028-12-26'];
+  function hoursFor(d) {
+    var m = d.getMonth() + 1, day = d.getDay();
+    var iso = d.getFullYear() + '-' + String(m).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    var summer = m >= 4 && m <= 10;
+    var lateStart = !summer || day === 0 || BANK_HOLIDAYS.indexOf(iso) !== -1;
+    return lateStart ? '8:00am – 9:00pm' : '7:00am – 9:00pm';
+  }
+  function updateToday(el) {
+    var t = el.querySelector('#today-hours');
+    if (t) t.textContent = hoursFor(new Date());
+  }
   var cache = {};          // route key -> screen element (keeps scroll position)
   var stack = [];          // in-app history of route keys
   var current = null;      // { key, name, el }
@@ -35,7 +70,7 @@ var PPApp = (function () {
 
   function parse(hash) {
     var h = (hash || '').replace(/^#\/?/, '');
-    if (!h || /access_token|type=recovery|error_description/.test(h)) return { name: 'home', key: 'home' };
+    if (!h || h === 'install' || /access_token|type=recovery|error_description/.test(h)) return { name: 'home', key: 'home' };
     var parts = h.split('/');
     if (parts[0] === 'news' && parts[1]) return { name: 'post', key: 'news/' + parts[1], param: decodeURIComponent(parts[1]) };
     if (ROUTES[parts[0]]) return { name: parts[0], key: parts[0] };
@@ -45,7 +80,7 @@ var PPApp = (function () {
   function makeScreen(r) {
     var def = ROUTES[r.name];
     var el = document.createElement('div');
-    el.className = 'screen';
+    el.className = 'screen' + (def.fixed ? ' screen--fixed' : '') + (def.depth > 0 ? ' screen--inner' : '');
     el.setAttribute('data-screen', r.name);
     el.hidden = true;
     screensEl.appendChild(el);
@@ -61,7 +96,8 @@ var PPApp = (function () {
     if (!current) return;
     var y = current.el.scrollTop;
     topbar.classList.toggle('is-scrolled', y > 4);
-    topbar.classList.toggle('show-title', y > 70 || ROUTES[current.name].depth > 0);
+    var def = ROUTES[current.name];
+    topbar.classList.toggle('show-title', y > 44 || def.depth > 0 || !!def.fixed);
   }
 
   function titleOf(r, el) { return (el && el.dataset.title) || ROUTES[r.name].title; }
@@ -90,6 +126,8 @@ var PPApp = (function () {
     setTitle(titleOf(r, el));
     topbar.classList.toggle('is-home', r.name === 'home');
     topbar.classList.toggle('on-staff', r.name === 'staff');
+    topbar.classList.toggle('is-fixed', !!def.fixed);
+    document.getElementById('book-external').hidden = r.name !== 'book';
     var canBack = def.depth > 0;
     backBtn.hidden = !canBack;
     if (canBack) {
@@ -121,6 +159,7 @@ var PPApp = (function () {
         old.hidden = true;
       }
     }
+    if (def.onShow) def.onShow(el);
     onScroll();
 
     if (!firstRender) {
@@ -199,21 +238,22 @@ var PPApp = (function () {
   }
   if (mq && mq.addEventListener) mq.addEventListener('change', function () { if (getTheme() === 'auto') applyTheme('auto'); });
 
-  // Opening banner hides itself after opening day
+  // Before opening day: show the opening date. After: show today's hours.
   function applyOpening(root) {
     var day = PP_CONFIG.openingDay;
-    if (!day) return;
-    var end = new Date(day + 'T23:59:59');
-    if (Date.now() > end.getTime()) {
-      Array.prototype.forEach.call(root.querySelectorAll('[data-opening]'), function (n) { n.hidden = true; n.remove(); });
-    }
+    var opened = !day || Date.now() > new Date(day + 'T00:00:00').getTime();
+    var stillOpeningDay = day && Date.now() <= new Date(day + 'T23:59:59').getTime();
+    Array.prototype.forEach.call(root.querySelectorAll('[data-opening]'), function (n) { if (opened && !stillOpeningDay) n.remove(); });
+    Array.prototype.forEach.call(root.querySelectorAll('[data-after-opening]'), function (n) { if (!opened) n.remove(); });
+    // On opening day itself show "Today" hours, not the countdown
+    if (opened && stillOpeningDay) Array.prototype.forEach.call(root.querySelectorAll('.status-card [data-opening]'), function (n) { n.remove(); });
   }
 
   // ── Taps anywhere ───────────────────────────
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-book], [data-sheet], [data-theme-set], .tab, a[href^="#/"]');
     if (!t) return;
-    if (t.hasAttribute('data-book')) { e.preventDefault(); PPUI.booking(t.getAttribute('data-book')); return; }
+    if (t.hasAttribute('data-book')) { e.preventDefault(); go('book'); return; }
     if (t.hasAttribute('data-sheet')) { e.preventDefault(); PPF.openSheet(t.getAttribute('data-sheet')); return; }
     if (t.hasAttribute('data-theme-set')) { applyTheme(t.getAttribute('data-theme-set')); return; }
     if (t.classList.contains('tab')) {
@@ -279,6 +319,11 @@ var PPApp = (function () {
     window.addEventListener('hashchange', onHashChange);
     syncThemeColour();
     PPStaff.syncIndicators();
+
+    if (/[?&]install\b/.test(location.search) || location.hash === '#/install') {
+      setTimeout(function () { PPF.installSheet(); }, 700);
+    }
+    window.addEventListener('online', function () { if (current && current.name === 'book') loadBooking(current.el); });
 
     var splash = document.getElementById('splash');
     setTimeout(function () { splash.classList.add('is-gone'); setTimeout(function () { splash.remove(); }, 400); }, 450);

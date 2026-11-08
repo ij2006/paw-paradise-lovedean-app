@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────
 //  Features that talk to Supabase (same database as the website)
-//  plus the pop-ups: gallery, photo sharing, suggestions, news,
-//  privacy/terms, horses note, accessibility, install help.
+//  plus the pop-ups: gallery, photo sharing, news, privacy/terms,
+//  accessibility, add-to-phone help.
 // ─────────────────────────────────────────────
 var db = (window.supabase && PP_CONFIG.supabaseUrl)
   ? window.supabase.createClient(PP_CONFIG.supabaseUrl, PP_CONFIG.supabaseAnonKey, {
@@ -61,13 +61,13 @@ var PPF = (function () {
 
   var visitorItems = [];
   function gallery(el) {
-    el.innerHTML = PPC.galleryIntro +
+    el.innerHTML = PPC.galleryHead +
+      PPC.group('', [PPC.cell({ attrs: 'data-sheet="share-photos"', icon: PPC.icon('📷', 'green'), title: 'Send us your photos', sub: 'Up to 3 from your visit' })]) +
       '<div class="tiles">' + GALLERY.map(function (it, i) { return tile(it, i, 'main'); }).join('') + '</div>' +
-      '<section class="section" id="visitor-section" hidden>' +
-        '<p class="eyebrow">From our visitors</p><h2>Your photos</h2>' +
-        '<div class="tiles tiles--visitors" id="visitor-tiles"></div>' +
-      '</section>' +
-      PPC.galleryOutro();
+      '<section id="visitor-section" hidden>' +
+        '<h2 class="group-title">From our visitors</h2>' +
+        '<div class="tiles" id="visitor-tiles"></div>' +
+      '</section>';
     el.addEventListener('click', function (e) {
       var t = e.target.closest('[data-view]');
       if (!t) return;
@@ -218,43 +218,15 @@ var PPF = (function () {
     });
   }
 
-  // ── SUGGESTIONS ─────────────────────────────
-  function suggestions(el) {
-    el.innerHTML = PPC.suggestions();
-    var $ = function (id) { return el.querySelector('#' + id); };
-    var text = $('sg-text'), msgEl = $('sg-msg'), btn = $('sg-submit');
-    function msg(t, type) { msgEl.textContent = t || ''; msgEl.className = 'form-msg form-msg--' + (type || 'info'); msgEl.hidden = !t; }
-    text.addEventListener('input', function () { $('sg-count').textContent = text.value.length; });
-    function done() { $('sg-form').hidden = true; $('sg-success').hidden = false; $('sg-success').querySelector('h2').setAttribute('tabindex', '-1'); $('sg-success').querySelector('h2').focus(); }
-    $('sg-form').addEventListener('submit', async function (e) {
-      e.preventDefault();
-      var t = text.value.trim(), cat = $('sg-category').value, name = $('sg-name').value.trim(), email = $('sg-email').value.trim();
-      msg('');
-      if (t.length < 10) { msg('Please write a little more (at least 10 characters).', 'error'); text.focus(); return; }
-      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg('That email address doesn\'t look right. Check it, or leave it blank.', 'error'); $('sg-email').focus(); return; }
-      if ($('sg-website').value) { done(); return; }
-      if (offline()) { msg(OFFLINE_MSG, 'error'); return; }
-      if (!db) { msg('Connection problem. Please close the app and try again.', 'error'); return; }
-      btn.disabled = true; btn.textContent = 'Sending…';
-      var res = await db.from('suggestions').insert({ category: cat || null, suggestion: t.slice(0, 1000), name: name || null, email: email || null });
-      btn.disabled = false; btn.textContent = 'Send suggestion';
-      if (res.error) { console.error(res.error); msg('Something went wrong. Please try again, or email us instead.', 'error'); return; }
-      done();
-    });
-    $('sg-another').addEventListener('click', function () {
-      ['sg-text', 'sg-name', 'sg-email', 'sg-category'].forEach(function (id) { $(id).value = ''; });
-      $('sg-count').textContent = '0'; msg('');
-      $('sg-success').hidden = true; $('sg-form').hidden = false; text.focus();
-    });
-  }
-
   // ── NEWS (blog posts) ───────────────────────
   var posts = [];
   function formatBody(t) {
     return '<p>' + esc(t).replace(/\r?\n\r?\n/g, '</p><p>').replace(/\r?\n/g, '<br>') + '</p>';
   }
   function news(el) {
-    el.innerHTML = PPC.newsIntro + '<section class="section"><div id="news-list" class="news-list"></div></section>';
+    el.innerHTML = PPC.newsHead +
+      '<div class="group" id="news-write-group" hidden>' + PPC.cell({ attrs: 'id="news-write"', icon: PPC.icon('✏️', 'gold'), title: 'Write a post' }) + '</div>' +
+      '<div id="news-list"></div>';
     el.querySelector('#news-write').addEventListener('click', function () { composeSheet(function () { loadNews(el); }); });
     loadNews(el);
     PPUI.pullToRefresh(el, function () { return loadNews(el); });
@@ -262,7 +234,7 @@ var PPF = (function () {
   async function loadNews(el) {
     var list = el.querySelector('#news-list');
     if (!posts.length) list.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div>';
-    getAdmin().then(function (a) { el.querySelector('#news-write').hidden = !a; });
+    getAdmin().then(function (a) { el.querySelector('#news-write-group').hidden = !a; });
     if (!db) { list.innerHTML = '<p class="empty">Unable to load news. Please close the app and try again.</p>'; return; }
     // No signal: skip the request (it would retry for several seconds) and show saved news straight away
     var res = offline() ? { error: true } : await db.from('blog_posts').select('*').eq('published', true).order('created_at', { ascending: false });
@@ -280,30 +252,30 @@ var PPF = (function () {
       posts = res.data;
       try { localStorage.setItem('pp-news-saved', JSON.stringify(posts.slice(0, 20))); } catch (e) {}
     }
-    if (!posts.length) { list.innerHTML = '<p class="empty">No posts yet. Check back soon.</p>'; return; }
-    list.innerHTML = note + posts.map(function (p) {
-      return '<a class="news-card" href="#/news/' + p.id + '">' +
-        '<div class="news-meta"><span class="avatar" aria-hidden="true">' + esc((p.author_name || 'P').charAt(0).toUpperCase()) + '</span>' +
-          '<span><strong>' + esc(p.author_name || 'Paw Paradise') + '</strong><span>' + PPUI.fmtDate(p.created_at, true) + '</span></span></div>' +
-        '<h2>' + esc(p.title) + '</h2>' +
-        (p.excerpt ? '<p>' + esc(p.excerpt) + '</p>' : '') +
-        '<span class="text-link" aria-hidden="true">Read more</span>' +
+    if (!posts.length) { list.innerHTML = '<p class="empty">No news yet. Check back soon.</p>'; return; }
+    list.innerHTML = note + '<div class="group">' + posts.map(function (p) {
+      return '<a class="cell cell--news" href="#/news/' + p.id + '">' +
+        '<span class="cell-main"><span class="cell-title">' + esc(p.title) + '</span>' +
+          '<span class="cell-sub">' + PPUI.fmtDate(p.created_at, true) + ' · ' + esc(p.author_name || 'Paw Paradise') + '</span>' +
+          (p.excerpt ? '<span class="cell-excerpt">' + esc(p.excerpt) + '</span>' : '') +
+        '</span>' +
+        '<svg class="cell-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
       '</a>';
-    }).join('');
+    }).join('') + '</div>';
   }
   async function newsPost(el, id, setTitle) {
     var p = posts.filter(function (x) { return String(x.id) === String(id); })[0];
     if (!p && db) {
-      el.innerHTML = '<div class="section"><div class="skeleton"></div></div>';
+      el.innerHTML = '<div class="pad"><div class="skeleton"></div></div>';
       var res = await db.from('blog_posts').select('*').eq('id', id).eq('published', true).maybeSingle();
       p = res.data;
     }
-    if (!p) { el.innerHTML = '<section class="section section--first"><p class="empty">This post isn\'t available.</p><a class="btn btn-secondary btn-block" href="#/news">Back to news</a></section>'; return; }
+    if (!p) { el.innerHTML = '<h1 class="sr-only">News</h1><p class="empty">This post isn\'t available.</p>'; return; }
     setTitle(p.title);
-    el.innerHTML = '<article class="section section--first post">' +
+    el.innerHTML = '<article class="post">' +
       '<div class="news-meta"><span class="avatar" aria-hidden="true">' + esc((p.author_name || 'P').charAt(0).toUpperCase()) + '</span>' +
         '<span><strong>' + esc(p.author_name || 'Paw Paradise') + '</strong><span>' + PPUI.fmtDate(p.created_at, true) + '</span></span></div>' +
-      '<h1 class="screen-h1">' + esc(p.title) + '</h1>' +
+      '<h1 class="post-title">' + esc(p.title) + '</h1>' +
       (p.excerpt ? '<p class="lead">' + esc(p.excerpt) + '</p>' : '') +
       '<div class="post-body">' + formatBody(p.body || '') + '</div>' +
       '<button type="button" class="btn btn-danger btn-block" id="post-delete" hidden>Delete this post</button>' +
@@ -370,10 +342,6 @@ var PPF = (function () {
     PPUI.sheet({ title: doc.title, tall: true, html: '<div class="legal">' + doc.html + '</div>' });
   }
 
-  function horsesSheet() {
-    PPUI.sheet({ title: 'About the horses', html: PPC.horses, footer: '<button type="button" class="btn btn-primary btn-block" data-close>Got it</button>' });
-  }
-
   var A11Y = { size: 'pp-fontsize', contrast: 'pp-contrast', dyslexia: 'pp-dyslexia', motion: 'pp-motion' };
   function getPref(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } }
   function setPref(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
@@ -428,49 +396,89 @@ var PPF = (function () {
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredPrompt = e; });
   window.addEventListener('appinstalled', function () { deferredPrompt = null; document.documentElement.classList.add('is-installed'); });
 
+  function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+  function isInstalled() { return document.documentElement.classList.contains('is-installed'); }
+
+  // "Add app to phone": pick iPhone or Android.
+  // Android installs in one tap (Chrome's own prompt). iPhone needs Safari's Share > Add to Home Screen.
   function installSheet() {
-    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    var html;
-    if (deferredPrompt) {
-      html = '<p>Install Paw Paradise on your phone. It opens full screen from your home screen, like any other app.</p>' +
-        '<button type="button" class="btn btn-primary btn-block" id="install-now">Install the app</button>';
-    } else if (ios) {
-      html = '<ol class="install-steps">' +
-        '<li>Open this page in <strong>Safari</strong>.</li>' +
-        '<li>Tap the <strong>Share</strong> button <span class="share-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> at the bottom of the screen.</li>' +
-        '<li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>' +
-        '<li>Tap <strong>Add</strong>. Paw Paradise will appear with your other apps.</li></ol>';
-    } else {
-      html = '<ol class="install-steps">' +
-        '<li>Open this page in <strong>Chrome</strong>.</li>' +
-        '<li>Tap the <strong>⋮</strong> menu at the top right.</li>' +
-        '<li>Tap <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li></ol>';
-    }
+    var ios = isIOS(), android = /android/i.test(navigator.userAgent);
+    var hero = '<div class="install-hero"><img src="images/icons/apple-touch-icon.png" alt="" width="64" height="64" /><p><strong>Paw Paradise</strong><br>Opens full screen from your home screen, like any other app.</p></div>';
     PPUI.sheet({
-      title: 'Add to your home screen', html: html,
+      title: 'Add app to your phone',
+      html: '<div id="install-body"></div>',
       onOpen: function (el, close) {
-        var b = el.querySelector('#install-now');
-        if (b) b.addEventListener('click', async function () {
-          deferredPrompt.prompt();
-          var choice = await deferredPrompt.userChoice;
-          deferredPrompt = null;
-          close();
-          if (choice && choice.outcome === 'accepted') PPUI.toast('Installed. Find Paw Paradise on your home screen.', 'success');
+        var body = el.querySelector('#install-body');
+        function show(html) { body.innerHTML = hero + html; var f = body.querySelector('button, a'); if (f) f.focus({ preventScroll: true }); }
+
+        function pick() {
+          if (isInstalled()) { show('<p class="center">You\'re already using the app. 🎉</p>'); return; }
+          show('<p>Which phone do you have?</p>' +
+            '<div class="platform-pick">' +
+              '<button type="button" class="platform-btn' + (ios ? ' is-likely' : '') + '" data-platform="ios"><span aria-hidden="true">📱</span>iPhone<small>Add to Home Screen</small></button>' +
+              '<button type="button" class="platform-btn' + (android ? ' is-likely' : '') + '" data-platform="android"><span aria-hidden="true">🤖</span>Android<small>Install in one tap</small></button>' +
+            '</div>');
+        }
+
+        function iphone() {
+          var notSafari = /CriOS|FxiOS|EdgiOS|GSA|FBAN|FBAV|Instagram/i.test(navigator.userAgent);
+          if (ios && notSafari) {
+            show('<ol class="install-steps">' +
+              '<li><span class="step-n">1</span><span>Copy this link and open it in <strong>Safari</strong>. iPhones only let Safari add apps to the home screen.</span></li>' +
+              '<li><span class="step-n">2</span><span>In Safari, tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>.</span></li></ol>' +
+              '<button type="button" class="btn btn-primary btn-block" id="copy-link">Copy link</button>' +
+              '<button type="button" class="text-link back-link" data-back>Back</button>');
+            return;
+          }
+          show('<ol class="install-steps">' +
+            '<li><span class="step-n">1</span><span>Make sure you\'re in <strong>Safari</strong>.</span></li>' +
+            '<li><span class="step-n">2</span><span>Tap the <strong>Share</strong> button <span class="share-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> (a square with an arrow, at the bottom of the screen).</span></li>' +
+            '<li><span class="step-n">3</span><span>Scroll down and tap <strong>Add to Home Screen</strong>.</span></li>' +
+            '<li><span class="step-n">4</span><span>Tap <strong>Add</strong>. Paw Paradise appears on your home screen.</span></li></ol>' +
+            (ios ? '<div class="share-hint" aria-hidden="true"><span>Share is down here</span><svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 4v15M6 13l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' : '') +
+            '<button type="button" class="text-link back-link" data-back>Back</button>');
+        }
+
+        async function androidInstall() {
+          if (deferredPrompt) {
+            // Chrome's own install prompt: one tap to confirm
+            deferredPrompt.prompt();
+            var choice = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+            if (choice && choice.outcome === 'accepted') { close(); PPUI.toast('Added. Find Paw Paradise on your home screen.', 'success'); }
+            return;
+          }
+          // Prompt not available (e.g. not Chrome, or already offered): show the menu route
+          show('<ol class="install-steps">' +
+            '<li><span class="step-n">1</span><span>Open this page in <strong>Chrome</strong>.</span></li>' +
+            '<li><span class="step-n">2</span><span>Tap the <strong>⋮</strong> menu at the top right.</span></li>' +
+            '<li><span class="step-n">3</span><span>Tap <strong>Install app</strong> (or <strong>Add to Home screen</strong>), then <strong>Install</strong>.</span></li></ol>' +
+            '<button type="button" class="text-link back-link" data-back>Back</button>');
+        }
+
+        body.addEventListener('click', function (e) {
+          var p = e.target.closest('[data-platform]');
+          if (p) { if (p.getAttribute('data-platform') === 'ios') iphone(); else androidInstall(); return; }
+          if (e.target.closest('[data-back]')) { pick(); return; }
+          if (e.target.closest('#copy-link')) {
+            var url = location.origin + location.pathname + '?install';
+            (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(function () { PPUI.toast('Link copied. Paste it into Safari.'); }, function () { PPUI.toast(url); });
+          }
         });
+        pick();
       }
     });
   }
 
   function openSheet(name) {
     if (name === 'privacy' || name === 'terms') return legalSheet(name);
-    if (name === 'horses') return horsesSheet();
     if (name === 'a11y') return a11ySheet();
     if (name === 'install') return installSheet();
     if (name === 'share-photos') return sharePhotosSheet();
   }
 
   return {
-    getAdmin: getAdmin, gallery: gallery, suggestions: suggestions,
+    getAdmin: getAdmin, gallery: gallery, installSheet: installSheet, isInstalled: isInstalled,
     news: news, newsPost: newsPost, composeSheet: composeSheet, openSheet: openSheet
   };
 })();

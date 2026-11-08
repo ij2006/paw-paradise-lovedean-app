@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────
 //  App building blocks: pop-up sheets, confirm, toast,
-//  the in-app booking screen, photo viewer, pull to refresh.
+//  photo viewer, pull to refresh.
 // ─────────────────────────────────────────────
 var PPUI = (function () {
   var layers = document.getElementById('layers');
@@ -159,53 +159,6 @@ var PPUI = (function () {
     });
   }
 
-  // ── In-app booking (Acuity) ─────────────────
-  function booking(key) {
-    var url = PP_CONFIG.acuity[key] || PP_CONFIG.acuity.all;
-    var titles = { standard: '1-4 dogs · £12', large: '5-8 dogs · £15', all: 'Book a session' };
-    var wrap = document.createElement('div');
-    wrap.className = 'fullscreen booking';
-    wrap.setAttribute('role', 'dialog');
-    wrap.setAttribute('aria-modal', 'true');
-    wrap.setAttribute('aria-labelledby', 'booking-title');
-    wrap.innerHTML =
-      '<div class="fs-bar">' +
-        '<button type="button" class="fs-btn" data-close>Done</button>' +
-        '<h2 class="fs-title" id="booking-title">' + titles[key] + '</h2>' +
-        '<a class="fs-btn fs-btn--right" href="' + esc(url) + '" target="_blank" rel="noopener" aria-label="Open booking in your browser">' +
-          '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
-        '</a>' +
-      '</div>' +
-      '<div class="booking-frame">' +
-        '<div class="booking-loading" id="booking-loading"><span class="spinner" aria-hidden="true"></span><p>Loading the booking calendar…</p></div>' +
-        '<iframe title="Paw Paradise booking calendar" src="' + esc(url) + '" allow="payment" referrerpolicy="strict-origin-when-cross-origin"></iframe>' +
-      '</div>' +
-      '<div class="booking-help">Booking not loading, or trouble paying? <a href="' + esc(url) + '" target="_blank" rel="noopener">Open in browser instead</a></div>';
-    layers.appendChild(wrap);
-    var frame = wrap.querySelector('iframe');
-    var loading = wrap.querySelector('#booking-loading');
-    frame.addEventListener('load', function () { loading.hidden = true; });
-    // If the calendar is slow (or blocked), make the browser option obvious
-    var slow = setTimeout(function () { wrap.classList.add('is-slow'); }, 8000);
-
-    var closed = false, record;
-    function close() {
-      if (closed) return;
-      closed = true;
-      clearTimeout(slow);
-      wrap.classList.remove('is-open');
-      popLayer(record);
-      setTimeout(function () { wrap.remove(); }, reducedMotion() ? 0 : 320);
-    }
-    record = pushLayer(wrap, close);
-    wrap.querySelector('[data-close]').addEventListener('click', close);
-    requestAnimationFrame(function () {
-      wrap.classList.add('is-open');
-      wrap.querySelector('[data-close]').focus({ preventScroll: true });
-    });
-    announce('Booking opened');
-  }
-
   // ── Photo & video viewer ────────────────────
   function viewer(items, start) {
     var wrap = document.createElement('div');
@@ -314,7 +267,7 @@ var PPUI = (function () {
 
   return {
     esc: esc, fmtDate: fmtDate, announce: announce, toast: toast,
-    sheet: sheet, confirm: confirm, booking: booking, viewer: viewer,
+    sheet: sheet, confirm: confirm, viewer: viewer,
     pullToRefresh: pullToRefresh, closeTop: closeTop,
     hasLayer: function () { return openLayers.length > 0; }
   };

@@ -8,13 +8,16 @@ It is completely separate from the website. Nothing in this folder changes the w
 
 | Tab | What it does |
 |---|---|
-| **Home** | Opening banner, intro, quick links, why choose us, who it's for, how it works, FAQs, socials, finding us |
-| **Book** | Prices, block bookings, gift certificates, what to bring, rules, opening hours, horses note. **Booking opens Acuity inside the app** (with an "Open in browser" backup) |
-| **Gallery** | Photo and video grid with a full-screen swipeable viewer, approved visitor photos, and "Send your photos" (same rules as the website: up to 3, shrunk and location data removed, staff approve first) |
-| **Reviews** | Google and Facebook review links |
-| **More** | Information & FAQs, Meet the team, News (blog), Suggestions, Contact, appearance (light/dark/auto), accessibility settings, Privacy Policy, Terms, Staff login |
+| **Home** | The key details: opening date (after opening day: today's opening hours), 50-minute sessions, prices, opening hours, finding us, and a Book button |
+| **Book** | The Acuity booking page, filling the screen. The ↗ button at the top opens it in the browser instead |
+| **Gallery** | Photo and video grid with a full-screen swipeable viewer, approved visitor photos, and "Send us your photos" (staff approve before anything shows) |
+| **More** | Add app to your phone, Information & FAQs, News, Contact, appearance (light/dark/auto), accessibility, Privacy Policy, Terms, Staff login |
 
-**Staff area** (More → Staff login): the same staff login as the website. Read and delete suggestions, approve or delete visitor photos, delete published photos, and write or delete news posts. A "Staff" button shows at the top while signed in.
+**Add app to your phone:** share `https://app.pawparadiselovedean.co.uk/?install` (on the website, in booking emails, or as a QR code). It opens the app with an iPhone / Android choice: Android installs in one tap, and iPhone shows step-by-step Add to Home Screen instructions. Apple doesn't let websites install themselves, so iPhone always needs Safari's Share → Add to Home Screen.
+
+**Staff area** (More → Staff login): same login as the website. Read and delete suggestions sent from the website, approve or delete visitor photos, and write or delete news posts.
+
+**What syncs with the website:** news/blog posts and visitor photos (same database). The main gallery photos and videos are files in each folder, so add new ones to both.
 
 ## How it's built
 
@@ -32,12 +35,12 @@ css/app.css            All styles (same colours and fonts as the website)
 js/config.js           Supabase, Acuity links, email, phone, socials, opening date
 js/content.js          The words on each screen. Edit text here
 js/legal.js            Privacy Policy and Terms text
-js/features.js         Gallery list, photo sharing, suggestions, news, pop-ups
+js/features.js         Gallery list, photo sharing, news, add-to-phone, pop-ups
 js/staff.js            Staff login and staff tools
-js/ui.js               Pop-ups, booking screen, photo viewer, pull-to-refresh
-js/app.js              Tabs, screens, back button, swipe-back
+js/ui.js               Pop-ups, photo viewer, pull-to-refresh
+js/app.js              Tabs, screens, Book tab, back button, swipe-back
 js/vendor/supabase.js  Supabase library (v2.119.0), kept locally so it works offline
-images/                Logo, app icons, gallery photos/videos (+ small thumbnails), team photos
+images/                Logo, app icons, gallery photos/videos (+ small thumbnails)
 ```
 
 ## Running it on your computer
@@ -68,7 +71,7 @@ The More tab also has an "Add the app to your home screen" card that shows these
 - **Words:** `js/content.js` (Privacy and Terms are in `js/legal.js`)
 - **Prices, email, phone, Acuity links, opening date:** `js/config.js` and `js/content.js`
 - **Gallery:** add the file to `images/gallery/` (plus a small square copy in `images/gallery/thumbs/`) and add a line to the `GALLERY` list in `js/features.js`
-- **After any change:** open `sw.js` and bump `VERSION` (e.g. `pp-app-v1` → `pp-app-v2`) so installed phones fetch the new files
+- **After any change:** open `sw.js` and bump `VERSION` (e.g. `pp-app-v2` → `pp-app-v3`) so installed phones fetch the new files
 
 The opening banner hides itself after the opening day set in `js/config.js`.
 
@@ -76,5 +79,5 @@ The opening banner hides itself after the opening day set in `js/config.js`.
 
 - Every screen at phone size, in light, dark and high-contrast modes and with large text
 - Accessibility (axe-core, WCAG 2.2 AA): no violations on any screen in any colour mode
-- Booking, pop-ups, settings, photo viewer, photo sending, suggestions, news, and the whole staff flow (sign in, approve, delete, publish, sign out), using test stand-ins for Supabase and Acuity
+- Book tab, pop-ups, settings, add-to-phone, photo viewer, photo sending, news, and the whole staff flow (sign in, approve, delete, publish, sign out), using test stand-ins for Supabase and Acuity
 - Installable (Chrome's install check passes), opens offline, Back button and swipe-back stay inside the app

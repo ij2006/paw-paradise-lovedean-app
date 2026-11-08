@@ -1,7 +1,7 @@
 // Paw Paradise app - service worker.
 // Saves the app on the phone so it opens instantly and works without signal.
 // After changing any app file, bump VERSION so phones pick up the new files.
-const VERSION = 'pp-app-v1';
+const VERSION = 'pp-app-v2';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './css/app.css',
