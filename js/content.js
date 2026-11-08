@@ -95,7 +95,7 @@
       return '' +
       '<h1 class="sr-only">Paw Paradise Lovedean</h1>' +
       '<figure class="hero">' +
-        '<img src="images/hero-dog-tunnel.jpg" alt="Golden retriever standing on the grassy mound above the dog tunnel" width="900" height="1080" />' +
+        '<img src="images/hero-dog.jpg" alt="Golden retriever standing on the grassy mound in the field" width="900" height="750" />' +
         '<figcaption><strong>Secure, private dog field</strong><span>Lovedean · South Downs National Park</span></figcaption>' +
       '</figure>' +
       '<div class="group home-status">' +

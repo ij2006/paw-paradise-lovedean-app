@@ -59,16 +59,14 @@
     // Only for screen sizes of known iPhones (not iPhone Duo or anything new, which report their edges properly)
     var knownWidth = [320, 375, 390, 393, 402, 414, 420, 428, 430, 440].indexOf(sw) !== -1;
     var stretch = false;
-    if (installed && isIPhone && portrait && knownWidth && Math.abs(vw - sw) < 2 && m.top < 1) {
-      // iOS says "no notch". Either the app reaches the top of the screen already,
-      // or iOS has started it a bit short (the top runs under the clock and the
-      // tab bar floats too high). In both cases: use the real notch height and,
-      // if it started short, stretch the app to the full screen.
-      if (vh >= sh - 1 || sh - vh <= 120) {
-        topFb = notchFor(sh);
-        if (sh >= 812 && m.bottom < 1) bottomFb = 21;
-        stretch = vh < sh - 1;
-      }
+    if (installed && isIPhone && portrait && knownWidth && Math.abs(vw - sw) < 2) {
+      // iOS sometimes says "no notch" even though the app reaches the top: use the real notch height
+      if (m.top < 1 && (vh >= sh - 1 || sh - vh <= 140)) topFb = notchFor(sh);
+      if (m.bottom < 1 && sh >= 812 && (vh >= sh - 1 || sh - vh <= 140)) bottomFb = 21;
+      // iOS sometimes makes the app shorter than the screen (by about the notch height)
+      // while still drawing it from the very top: stretch it to the full screen,
+      // so the tab bar sits at the bottom.
+      stretch = vh < sh - 1 && sh - vh <= 140;
     }
     h.classList.toggle('fit-stretch', stretch);
     h.style.setProperty('--screen-h', sh + 'px');

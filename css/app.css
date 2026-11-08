@@ -1026,10 +1026,6 @@ html[data-fontsize="lg"] .topbar-title, html[data-fontsize="xl"] .topbar-title {
 .mosaic .play { width: 28px; height: 28px; top: auto; left: auto; right: 8px; bottom: 8px; transform: none; display: grid; place-items: center; border-radius: 50%; background: rgba(0,0,0,.5); color: #fff; }
 .mosaic .empty { grid-column: 1 / -1; }
 .hero { max-height: 52vh; }
-/* Home photo: tall enough to show the dog and the tunnel */
-.hero { aspect-ratio: 5 / 6; max-height: 64vh; }
-.hero img { object-position: center 60%; }
-@media (min-width: 560px) { .hero { aspect-ratio: 4 / 3; } .hero img { object-position: center 55%; } }
 /* iOS started the app short: stretch it to the whole screen (see fit.js) */
 html.fit-stretch, html.fit-stretch body { height: var(--screen-h); }
 html.fit-stretch .app { bottom: auto; height: var(--screen-h); }
@@ -1037,3 +1033,19 @@ html.fit-stretch .app { bottom: auto; height: var(--screen-h); }
 html { touch-action: manipulation; }
 /* Tab bar closer to the bottom edge */
 :root { --tab-gap: max(8px, calc(var(--safe-bottom) - 16px)); }
+
+/* ═══ v15: green header that runs up behind the clock ═════════════════
+   iPhone softly blurs the area behind the clock. With the green strip
+   and the header the same colour, that blur is green on green, so it
+   looks solid instead of smudgy. */
+.topbar, .topbar.is-scrolled, .topbar.is-fixed, .topbar.has-scrolled { background: #24533A; box-shadow: none; border-bottom: 0; }
+[data-theme="dark"] .topbar, [data-theme="dark"] .topbar.is-scrolled, [data-theme="dark"] .topbar.is-fixed { background: #0F1813; box-shadow: 0 1px 0 rgba(255,255,255,.06); }
+[data-contrast="on"] .topbar, [data-contrast="on"] .topbar.is-scrolled, [data-contrast="on"] .topbar.is-fixed { background: #00260D; }
+[data-theme="dark"][data-contrast="on"] .topbar { background: #000; }
+.topbar-title, .topbar.is-home .topbar-title { color: #F7F2E9; }
+[data-theme="dark"] .topbar-title { color: #EDE5D4; }
+.topbar-title::before, .topbar.is-home .topbar-title::before { background-color: #F7F2E9; }
+.topbar .back-btn, .topbar .icon-btn--right { background: rgba(255,255,255,.14); border: 0; color: #fff; box-shadow: none; }
+.topbar .back-btn:active, .topbar .icon-btn--right:active { background: rgba(255,255,255,.24); }
+.topbar .staff-pill { background: #F7F2E9; color: #24533A; }
+.topbar :focus-visible { outline-color: #F7F2E9; }

@@ -130,6 +130,10 @@ var PPApp = (function () {
 
   function titleOf(r, el) { return (el && el.dataset.title) || ROUTES[r.name].title; }
 
+  // Page slides are off: screens appear the instant you tap, like the tabs.
+  // (Set to true to bring the sliding animation back.)
+  var SLIDES = false;
+
   function show(r, direction) {
     var def = ROUTES[r.name];
     var el = (!def.nocache && cache[r.key]) || null;
@@ -170,7 +174,7 @@ var PPApp = (function () {
     // Finish any slide still in progress first, so a quick second tap can never
     // leave the wrong screen showing.
     finishTransition();
-    var motion = direction !== 'none' && direction !== 'fade' && document.documentElement.getAttribute('data-motion') !== 'reduced' && !firstRender && prev && prev.el !== el;
+    var motion = SLIDES && direction !== 'none' && direction !== 'fade' && document.documentElement.getAttribute('data-motion') !== 'reduced' && !firstRender && prev && prev.el !== el;
     el.hidden = false;
     Array.prototype.forEach.call(screensEl.children, function (s) {
       if (s !== el && (!motion || s !== (prev && prev.el))) s.hidden = true;

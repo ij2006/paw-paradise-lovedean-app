@@ -1,5 +1,5 @@
 {
-  "id": "/",
+  "id": "/paw-paradise-app",
   "name": "Paw Paradise Lovedean",
   "short_name": "Paw Paradise",
   "description": "Book a secure, private dog field session in Lovedean, Hampshire.",
@@ -11,16 +11,69 @@
   "theme_color": "#24533A",
   "lang": "en-GB",
   "dir": "ltr",
-  "categories": ["lifestyle", "sports"],
+  "categories": [
+    "lifestyle",
+    "sports"
+  ],
   "icons": [
-    { "src": "images/icons/pp-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "images/icons/pp-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "images/icons/pp-icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "images/icons/pp-icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "images/icons/pp-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icons/pp-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/icons/pp-icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "images/icons/pp-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Book a session", "short_name": "Book", "url": "./#/book", "icons": [{ "src": "images/icons/pp-icon-192.png", "sizes": "192x192" }] },
-    { "name": "Information and FAQs", "short_name": "FAQs", "url": "./#/info", "icons": [{ "src": "images/icons/pp-icon-192.png", "sizes": "192x192" }] },
-    { "name": "Gallery", "short_name": "Gallery", "url": "./#/gallery", "icons": [{ "src": "images/icons/pp-icon-192.png", "sizes": "192x192" }] }
+    {
+      "name": "Book a session",
+      "short_name": "Book",
+      "url": "./#/book",
+      "icons": [
+        {
+          "src": "images/icons/pp-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Information and FAQs",
+      "short_name": "FAQs",
+      "url": "./#/info",
+      "icons": [
+        {
+          "src": "images/icons/pp-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Gallery",
+      "short_name": "Gallery",
+      "url": "./#/gallery",
+      "icons": [
+        {
+          "src": "images/icons/pp-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }
