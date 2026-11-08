@@ -860,7 +860,9 @@ var PPApp = (function () {
 
   function finishStartup() {
     var splash = document.getElementById('splash');
-    setTimeout(function () { splash.classList.add('is-gone'); setTimeout(function () { splash.remove(); }, 400); }, 450);
+    // Opening logo stays up for at least this long from the moment the app opens
+    var SPLASH_MS = 2000;
+    setTimeout(function () { splash.classList.add('is-gone'); setTimeout(function () { splash.remove(); }, 400); }, Math.max(450, SPLASH_MS - performance.now()));
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       // When a new version takes over, reload once so it shows straight away
       // (only in the first few seconds after opening, never while someone is using the app;
