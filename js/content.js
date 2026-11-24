@@ -106,6 +106,13 @@
           '<span class="cell-main"><span class="cell-title">Open today <span id="today-hours"></span></span><span class="cell-sub">Every day, including bank holidays</span></span></div>' +
       '</div>' +
       '<div class="home-book"><a class="btn btn-primary btn-block" href="#/book">Book a session</a></div>' +
+      // After-dark notice
+      '<div class="dark-card" role="note">' +
+        '<span class="dark-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></span>' +
+        '<div><span class="dark-card-tag">Booking after sunset?</span>' +
+        '<p class="dark-card-title">Bring a head torch &amp; a light-up harness</p>' +
+        '<p class="dark-card-text">We can\'t install any lighting at the field due to planning permission, as we\'re in the South Downs National Park.</p></div>' +
+      '</div>' +
       group('Sessions', [
         info('Session length', '50 minutes'),
         info('1–4 dogs', '£12'),

@@ -1112,3 +1112,12 @@ html.fit-stretch .splash { position: absolute; }
 .book-note strong { color: #fff; }
 [data-theme="dark"] .book-note { background: #1F3D2B; }
 [data-contrast="on"] .book-note { background: #00260D; }
+
+/* Home: after-dark notice card */
+.dark-card { display: flex; gap: 14px; align-items: center; margin: 14px 16px 4px; padding: 16px; border-radius: 20px; background: linear-gradient(135deg, #1C3D28 0%, #24533A 100%); color: #F7F2E9; box-shadow: 0 8px 22px rgba(28,61,40,.20); }
+.dark-card-icon { flex: none; width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: rgba(255,255,255,.10); color: #F5C46B; }
+.dark-card-tag { display: inline-block; background: #F5C46B; color: #1C3D28; font-size: .68rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; }
+.dark-card-title { margin: 6px 0 3px; font-weight: 700; font-size: 1rem; color: #fff; }
+.dark-card-text { margin: 0; font-size: .84rem; line-height: 1.4; color: rgba(247,242,233,.88); }
+[data-theme="dark"] .dark-card { background: linear-gradient(135deg, #12291C 0%, #1F3D2B 100%); box-shadow: none; border: 1px solid rgba(255,255,255,.08); }
+[data-contrast="on"] .dark-card { background: #00260D; }
