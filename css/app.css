@@ -1102,3 +1102,13 @@ html.fit-stretch .splash { position: absolute; }
 .install-other { margin: 18px 0 6px; padding: 14px 16px; border-radius: 16px; background: var(--card); text-align: center; }
 .install-other p { margin: 0 0 10px; font-size: .9rem; color: var(--text-light); }
 .install-other p strong { color: var(--text); }
+
+/* Book tab: no-lighting notice above the calendar; the calendar fills the rest */
+.screen--fixed.book-screen { display: flex; flex-direction: column; }
+.book-screen iframe { position: relative; inset: auto; flex: 1 1 auto; height: auto; min-height: 0; }
+.book-note { flex: none; display: flex; gap: 10px; align-items: flex-start; margin: 0; padding: 10px 14px; background: #24533A; color: #F7F2E9; position: relative; z-index: 2; }
+.book-note svg { flex: none; margin-top: 1px; color: #F5C46B; }
+.book-note p { margin: 0; font-size: .8rem; line-height: 1.4; color: #F7F2E9; }
+.book-note strong { color: #fff; }
+[data-theme="dark"] .book-note { background: #1F3D2B; }
+[data-contrast="on"] .book-note { background: #00260D; }

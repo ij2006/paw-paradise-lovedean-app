@@ -29,10 +29,14 @@ var PPApp = (function () {
 
   // ── Book tab: the Acuity booking page, filling the screen ──
   function renderBook(el) {
+    el.classList.add('book-screen');
     el.innerHTML =
       '<h1 class="sr-only">Book a session</h1>' +
       // Narrow strips down each side, over the booking calendar, so you can still swipe between tabs here
       '<div class="swipe-strip swipe-strip--left" aria-hidden="true"></div><div class="swipe-strip swipe-strip--right" aria-hidden="true"></div>' +
+      // No-lighting notice above the calendar, for anyone booking after dark
+      '<div class="book-note" role="note"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>' +
+        '<p><strong>Booking after sunset?</strong> We can\'t install any lighting at the field due to planning permission, as we\'re in the South Downs National Park. We recommend bringing a head torch or light, and a light-up harness for your dog.</p></div>' +
       '<div class="booking-loading" id="booking-loading"><span class="spinner" aria-hidden="true"></span><p>Loading booking…</p>' +
         '<p id="booking-slow" hidden>Taking a while? <a href="' + PP_CONFIG.acuity.all + '" target="_blank" rel="noopener">Open booking in your browser</a></p></div>' +
       '<div class="booking-offline" id="booking-offline" hidden><p><strong>You\'re offline</strong></p><p>Connect to the internet to book a session.</p><button type="button" class="btn btn-primary" id="booking-retry">Try again</button></div>';

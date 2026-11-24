@@ -2,7 +2,7 @@
 // Saves the app on the phone so it works without signal.
 // App code is always fetched fresh when online, so updates appear straight away.
 // Bumping VERSION after a change also clears old saved copies.
-const VERSION = 'pp-app-v38';
+const VERSION = 'pp-app-v40';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './css/app.css',
